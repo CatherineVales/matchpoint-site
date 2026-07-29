@@ -2,15 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://matchpoint.agency/</loc>
-    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://matchpoint.agency/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://matchpoint.agency/en/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://matchpoint.agency/"/>
+    <loc>https://agenciamatchpoint.com/</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://agenciamatchpoint.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://agenciamatchpoint.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://agenciamatchpoint.com/"/>
   </url>
   <url>
-    <loc>https://matchpoint.agency/en/</loc>
-    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://matchpoint.agency/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://matchpoint.agency/en/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://matchpoint.agency/"/>
+    <loc>https://agenciamatchpoint.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://agenciamatchpoint.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://agenciamatchpoint.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://agenciamatchpoint.com/"/>
   </url>
 </urlset>

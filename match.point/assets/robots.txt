@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /design_system_oficial.html
 
-Sitemap: https://matchpoint.agency/sitemap.xml
+Sitemap: https://agenciamatchpoint.com/sitemap.xml
