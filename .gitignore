@@ -1,0 +1,25 @@
+# ── Arquivos brutos e templates de terceiros (pesados — não versionar) ──
+match.point/raw_files/
+match.point/templates/
+
+# ── Documentos de negócio sensíveis ──
+*.pdf
+
+# ── Masters de imagem não referenciados (fonte pesada; o site usa os .webp) ──
+# (comente as 2 linhas abaixo se quiser versionar os PNGs-mestre)
+match.point/assets/images/prehero.png
+match.point/assets/images/founders-banner.png
+
+# ── Config local/pessoal do Claude Code ──
+.claude/settings.local.json
+
+# ── Artefatos de SO / OneDrive ──
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+
+# ── Temporários ──
+*.tmp
+*.log
+node_modules/

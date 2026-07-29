@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="no-js">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex, nofollow"/><!-- QA-01: artefato interno — não indexar / excluir do deploy público -->
+<!-- capability gate cedo (antes do 1º paint): habilita estados motion sem FOUC -->
+<script>document.documentElement.className='js'</script>
+<title>Match Point — Design System Oficial</title>
+<meta name="description" content="Design System oficial da Match Point — tipografia, cores, componentes e movimento, no ponto exato."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Outfit:wght@200;300;400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   MATCH POINT — DESIGN SYSTEM OFICIAL
+   Cores e fontes: brand kit Match Point
+   ═══════════════════════════════════════════════════════════
+
+   ┌─────────────────────────────────────────────────────────┐
+   │  MOTION SYSTEM · FOUNDATIONS (Phase 01)                  │
+   │  Fonte da verdade: Motion Blueprint aprovado.           │
+   │  Este bloco é a carta do movimento — leia antes de      │
+   │  adicionar qualquer animação.                            │
+   └─────────────────────────────────────────────────────────┘
+
+   VERBO ÚNICO — "POUSAR" (settle) [Blueprint §5]
+     Nada salta, quica nem estoura. Tudo chega decidido e
+     assenta com peso. A curva da marca (§4 easing) É esse verbo.
+     Gestos permitidos: pousar · assentar · erguer o véu · traçar · ceder.
+     Proibidos: bounce, elastic, overshoot, rotação > 8°, flip 3D, glitch.
+
+   GRAMÁTICA — 5 categorias [Blueprint §1]. NÃO existe "decorativa".
+     · Narrative  — conta a história; única que pode pedir o olhar.
+     · Functional — explica estado/espaço; sempre a mais rápida da tela.
+     · Feedback   — confirma ação do usuário; local, ≤ 80ms, interrompe tudo.
+     · Ambient    — respiração de fundo; quase invisível (opacidade ≤ .12).
+     · Arrival    — chegada de mídia pesada; existe para não ser vista.
+     Interação: Narrative silencia Ambient · Feedback é local e imediato ·
+                Arrival nunca compete · Functional é sempre o mais rápido.
+
+   HIERARQUIA / DENSIDADE [Blueprint §2, §3, §14]
+     Ordem: input(Feedback) → protagonista(título) → suporte → ação → mídia → ambiente.
+     Máx. por viewport: 1 narrativa · 3 elementos em movimento · 2 loops ambiente ·
+                        2 grupos de stagger (6 itens cada) · 3 planos de parallax.
+     Nunca simultâneo: 2 títulos serifados · 2 narrativas de dobras diferentes ·
+                        marquee + narrativa na mesma viewport.
+     Estático para sempre: grid, réguas estruturais, texto em leitura (reveal é one-shot).
+
+   CAMADAS ESPACIAIS [Blueprint §4] — mais fundo = mais devagar e por mais tempo.
+     Foreground · Primary · Supporting · Media · Background · Ambient.
+
+   CONVENÇÕES DE CÓDIGO [Blueprint §15]
+     · Anima só transform / opacity (filter apenas em Arrival de imagem, uma vez).
+     · will-change entra ao agendar e sai ao concluir — nunca permanente.
+     · Um único rAF (Lenis, Phase 07) alimenta inércia/parallax/cursor.
+     · Reveals são one-shot (observer desconecta após disparar).
+     · Zero hardcode: durações → tokens (Phase 03), easing → tokens (Phase 04).
+     · Gate de capacidade: html.no-js (sem JS) → html.js (com JS).
+     · reduced-motion é uma VARIANTE desenhada (Phase 14), não "motion off".
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --ink:#1A1814; --charcoal:#2E2C29; --stone:#6B6660; --warm:#A8A29E;
+  --linen:#EDE9E3; --cream:#F7F4EF; --white:#FDFCFA;
+  --gold:#B8A98A; --gold-lt:#D4C9B0; --accent:#8B7355;
+  /* semânticas · PROVISÓRIAS — pendente aprovação do brand team; a motion é definitiva */
+  --error:#A6553B; --success:#6E7A55;
+  --line:rgba(139,115,85,.16); --line-md:rgba(139,115,85,.30);
+  --serif:'Cormorant Garamond',serif; --sans:'Outfit',sans-serif; --syne:'Syne',sans-serif;
+  /* ── EASING · Blueprint §13 ──────────────────────────────── */
+  --ease-brand:cubic-bezier(.22,.84,.44,1); /* entradas/transforms — o verbo "pousar"        */
+  --ease-exit:cubic-bezier(.5,0,.75,.4);    /* saídas/fechamentos — sai de cena sem cerimônia */
+  /* loops → linear (marquee/spinner) · inércia contínua → lerp/JS (Phase 07) */
+  --pad:clamp(1.4rem,5vw,5rem);
+  --maxw:1360px;
+
+  /* ── MOTION TOKENS · Blueprint §12 ──────────────────────────
+     Fonte da verdade única. Nenhuma animação futura deve usar
+     valores fora desta tabela sem aprovação de direção.
+     (Consumo dos tokens: Phase 03 timing · Phase 04 easing.)      */
+
+  /* Duração [§12] — micro→cerimonial */
+  --dur-instant:80ms;   /* press, resposta a input                */
+  --dur-fast:240ms;     /* hovers, fades curtos, erros, saídas    */
+  --dur-base:420ms;     /* estados funcionais: menu, CTA, indicador*/
+  --dur-slow:650ms;     /* assinatura tipográfica, arrival, accordion */
+  --dur-grand:900ms;    /* véu do preloader, progress             */
+  --dur-anchor:1200ms;  /* rolagem de âncora (teto)               */
+  --dur-ambient:40s;    /* marquees, pulsos, grain                */
+
+  /* Distância / transformação [§12] */
+  --move-touch:4px;     /* shake, magnetismo mínimo               */
+  --move-near:12px;     /* foreground, note-card                  */
+  --move-base:24px;     /* suporte: parágrafos, labels            */
+  --move-reveal:32px;   /* primary content pousando               */
+  --move-type-y:130%;   /* assinatura tipográfica — IMUTÁVEL      */
+  --move-type-rot:8deg; /* assinatura tipográfica — IMUTÁVEL      */
+
+  /* Escala [§12] */
+  --scale-press:.97;      /* botões                              */
+  --scale-press-card:.985;/* cards                               */
+  --scale-press-chip:.95; /* chips, badges                       */
+  --scale-arrive:1.04;    /* imagens: arrival e hover            */
+
+  /* Blur / parallax [§12, §14] */
+  --blur-arrive:8px;      /* somente arrival de imagem           */
+  --parallax-deep:.12;    /* background                          */
+  --parallax-mid:.07;     /* media                               */
+  --parallax-max:60px;    /* deslocamento máximo (budget)        */
+
+  /* Ritmo / stagger [§12] */
+  --stagger-char:45ms;    /* letras (H1)                         */
+  --stagger-word:90ms;    /* palavras, itens de lista, CTAs      */
+  --stagger-menu:60ms;    /* cascata do menu mobile              */
+  --stagger-cap:6;        /* teto de itens por grupo             */
+  --delay-max:600ms;      /* maior delay fora do hero            */
+  --opacity-ambient:.12;  /* sheen, grain, véus decorativos      */
+
+  /* Profundidade de camada [§4] — foreground → ambient */
+  --z-ambient:0; --z-media:1; --z-content:2; --z-header:50;
+  --z-cursor:60; --z-popup:90; --z-preloader:100;
+
+  /* Intensidade global [§16] — Phase 14 usa para a variante reduzida */
+  --motion-scale:1;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+/* Lenis · scroll com inércia (A-H1) — ativo só com JS+motion; senão scroll nativo */
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
+.lenis.lenis-stopped{overflow:hidden}
+body{
+  background:var(--cream); color:var(--ink);
+  font-family:var(--sans); font-weight:300; line-height:1.65;
+  overflow-x:hidden; -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--cream)}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font-family:inherit}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:1px solid var(--accent);outline-offset:4px}
+
+/* ── primitives ──────────────────────────── */
+.container{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad)}
+.section{padding-block:clamp(4.5rem,9vw,8.5rem);position:relative}
+.subheading{
+  font-weight:200;font-size:.68rem;letter-spacing:.42em;text-transform:uppercase;
+  color:var(--accent);display:inline-flex;align-items:center;gap:.8rem;
+}
+.subheading::before{content:'';width:30px;height:1px;background:var(--gold);opacity:.8}
+.h-serif{font-family:var(--serif);font-style:italic;font-weight:400;line-height:1.02;color:var(--ink)}
+.h-xl{font-size:clamp(2.6rem,6.5vw,5rem)}
+.h-lg{font-size:clamp(2.1rem,4.6vw,3.4rem)}
+.h-md{font-size:clamp(1.5rem,2.6vw,2rem)}
+.paragraph{font-size:.95rem;color:var(--stone);max-width:60ch}
+.paragraph--lg{font-size:1.08rem}
+.label{font-weight:200;font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--warm)}
+
+/* ── letter / word reveal (GL title-animation) ── */
+.t-wrap{display:inline-block;overflow:hidden;vertical-align:bottom}
+.t-ch{
+  display:inline-block;transform:translate3d(-.6rem,130%,0) rotateZ(8deg);
+  transition:transform var(--dur-slow) var(--ease-brand);
+}
+.t-wrap.sp{min-width:.35em}
+[data-title].js--active .t-ch{transform:translate3d(0,0,0) rotateZ(0)}
+html.no-js .t-ch{transform:none}
+
+/* ── scroll reveal ──────────────────────── */
+html.js [data-reveal]{opacity:0;transform:translateY(32px);transition:opacity var(--dur-grand) var(--ease-brand),transform var(--dur-grand) var(--ease-brand)}
+html.js [data-reveal="fade"]{transform:none}
+html.js [data-reveal="left"]{transform:translateX(-36px)}
+html.js [data-reveal="right"]{transform:translateX(36px)}
+html.js [data-reveal].in{opacity:1;transform:none}
+/* mask reveal · limpa de cima p/ baixo (A-M1) — para linhas editoriais estáticas */
+html.js [data-reveal="mask"]{opacity:1;transform:none;clip-path:inset(0 0 100% 0);transition:clip-path var(--dur-slow) var(--ease-brand)}
+html.js [data-reveal="mask"].in{clip-path:inset(0 0 0 0)}
+
+/* ── parallax media ─────────────────────── */
+.px-wrap{overflow:hidden;position:relative}
+.px-img{width:100%;height:110%;object-fit:cover;will-change:transform}
+
+/* ── image arrival · "assentar" (A-C2 · §8) ─────────────────────
+   Placeholder tonal atrás da foto (sem gap/flash) + revelação por
+   fade+blur no decode. Sem transform: evita conflito com parallax
+   e hover-scale (§15). Sem JS → fotos visíveis (não há html.js).   */
+.banner,.cta-banner,.g-item,.steps__media,.drag-slide,.form-card__img,.popup__media{background-color:var(--linen)}
+html.js .banner__img,html.js .cta-banner__img,
+html.js .g-item img,html.js .steps__media img,html.js .drag-slide img,
+html.js .form-card__img img,html.js .popup__media img{
+  opacity:0;filter:blur(var(--blur-arrive));
+  transition:opacity var(--dur-slow) var(--ease-brand),filter var(--dur-slow) var(--ease-brand);
+  will-change:opacity,filter;
+}
+html.js .banner__img.arrived,html.js .cta-banner__img.arrived,
+html.js .g-item img.arrived,html.js .steps__media img.arrived,html.js .drag-slide img.arrived,
+html.js .form-card__img img.arrived,html.js .popup__media img.arrived{opacity:1;filter:none}
+
+/* ── circle-btn (GL radial fill) ────────── */
+.btn{
+  position:relative;display:inline-flex;align-items:center;gap:.55rem;
+  font-weight:300;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
+  padding:1.02rem 2.1rem;border-radius:999px;overflow:hidden;isolation:isolate;
+  color:var(--cream);background:var(--ink);border:1px solid var(--ink);
+  transition:color var(--dur-base) var(--ease-brand),border-color var(--dur-base) var(--ease-brand),transform var(--dur-base) var(--ease-brand);
+}
+.btn::before{
+  content:'';position:absolute;z-index:-1;width:0;height:0;border-radius:50%;
+  left:var(--left,50%);top:var(--top,50%);transform:translate(-50%,-50%);
+  background:var(--gold);transition:width var(--dur-grand) var(--ease-brand),height var(--dur-grand) var(--ease-brand);
+}
+.btn:hover::before{width:460px;height:460px}
+.btn:hover{color:var(--ink);border-color:var(--gold);transform:translateY(-2px)}
+/* magnetismo (A-M2): segue o cursor mais rápido enquanto engajado; solta suave */
+.btn.js--magnetic{transition:transform var(--dur-fast) var(--ease-brand),color var(--dur-base) var(--ease-brand),border-color var(--dur-base) var(--ease-brand)}
+.btn--light{background:transparent;color:var(--ink);border-color:var(--line-md)}
+.btn--light::before{background:var(--ink)}
+.btn--light:hover{color:var(--cream);border-color:var(--ink)}
+.btn--gold{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.btn--gold::before{background:var(--ink)}
+.btn--gold:hover{color:var(--cream)}
+.btn--sm{padding:.7rem 1.4rem;font-size:.68rem}
+.btn[disabled]{opacity:.38;pointer-events:none}
+.link{
+  position:relative;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  padding-bottom:.2rem;
+}
+.link::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:currentColor;transform-origin:right;transition:transform var(--dur-base) var(--ease-brand)}
+.link:hover::after{animation:relink var(--dur-slow) var(--ease-brand)}
+@keyframes relink{0%{transform:scaleX(1);transform-origin:right}45%{transform:scaleX(0);transform-origin:right}50%{transform:scaleX(0);transform-origin:left}100%{transform:scaleX(1);transform-origin:left}}
+
+/* ── preloader ──────────────────────────── */
+.preloader{
+  position:fixed;inset:0;z-index:100;background:var(--cream);
+  display:grid;place-items:center;transition:transform var(--dur-grand) var(--ease-brand),opacity var(--dur-slow);
+}
+.preloader img{width:74px;opacity:0;animation:plIn var(--dur-grand) var(--ease-brand) .1s both}
+@keyframes plIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.preloader.done{transform:translateY(-100%);opacity:.4;pointer-events:none}
+html.no-js .preloader{display:none}
+
+/* ── header ─────────────────────────────── */
+.header{position:fixed;inset:0 0 auto;z-index:50;transition:background var(--dur-base) var(--ease-brand),box-shadow var(--dur-base),transform var(--dur-base) var(--ease-brand)}
+.header.js--scrolled{background:rgba(247,244,239,.72);backdrop-filter:blur(24px) saturate(1.3);box-shadow:0 1px 0 var(--line)}
+.header.js--hidden{transform:translateY(-100%)}
+.header__inner{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;max-width:var(--maxw);margin-inline:auto;padding:1rem var(--pad)}
+.header.js--scrolled .header__inner{padding-block:.65rem}
+.brand{display:flex;align-items:center;gap:.7rem}
+.brand img{width:36px;height:36px;border-radius:50%}
+.brand__t{display:flex;flex-direction:column}
+.brand__name{font-family:var(--syne);font-weight:700;font-size:.8rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
+.brand__name em{font-style:normal;color:var(--accent)}
+.brand__sub{font-weight:200;font-size:.48rem;letter-spacing:.4em;text-transform:uppercase;color:var(--stone)}
+.header__links{display:flex;gap:1.9rem;align-items:center;position:relative}
+.hlink{position:relative;display:inline-block;overflow:hidden;font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--stone);padding-block:.3rem}
+.hlink .w1,.hlink .w2{display:block;white-space:nowrap}
+.hlink .w2{position:absolute;left:0;top:.3rem}
+.hlink .ch{display:inline-block;transition:transform var(--dur-base) var(--ease-brand)}
+.hlink .w2 .ch{transform:translateY(125%)}
+.hlink:hover .w1 .ch{transform:translateY(-125%)}
+.hlink:hover .w2 .ch{transform:translateY(0)}
+.hlink .w2{color:var(--accent)}
+.hlink.js--active{color:var(--ink)}
+/* indicador de seção ativa — desliza entre links (A-C4) · transform puro */
+.hlink-ind{position:absolute;left:0;bottom:-4px;height:1px;width:1px;background:var(--accent);transform-origin:left;transform:translateX(0) scaleX(0);opacity:0;pointer-events:none;transition:transform var(--dur-base) var(--ease-brand),opacity var(--dur-fast) var(--ease-brand);will-change:transform}
+.header__cta{display:flex;align-items:center;gap:.8rem}
+.burger{display:none;flex-direction:column;gap:5px;width:42px;height:42px;align-items:center;justify-content:center;border:1px solid var(--line-md);border-radius:50%}
+.burger span{width:16px;height:1.4px;background:var(--ink);transition:var(--dur-base) var(--ease-brand)}
+.burger.js--active span:first-child{transform:rotate(45deg) translate(2px,2px)}
+.burger.js--active span:last-child{transform:rotate(-45deg) translate(2px,-2px)}
+@media(max-width:980px){
+  .header__links{position:fixed;inset:0;background:var(--cream);flex-direction:column;justify-content:center;gap:2rem;transform:translateY(-102%);transition:transform var(--dur-slow) var(--ease-brand);z-index:-1}
+  .header__links.js--open{transform:none}
+  .hlink{font-size:1.1rem}
+  /* cascata dos links ao abrir o menu (A-C4) */
+  .header__links .hlink{opacity:0;transform:translateY(var(--move-base));transition:opacity var(--dur-base) var(--ease-brand),transform var(--dur-base) var(--ease-brand);transition-delay:calc(var(--i,0) * var(--stagger-menu))}
+  .header__links.js--open .hlink{opacity:1;transform:none}
+  .header__links .hlink.js--active{color:var(--accent)}
+  .hlink-ind{display:none}
+  .burger{display:flex}
+  .header__cta .btn{display:none}
+}
+body.js--nav-lock{overflow:hidden}
+
+/* ── hero ───────────────────────────────── */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;position:relative;padding:8.5rem var(--pad) 5.5rem;overflow:hidden;
+  /* timeline do hero (T0-relativo) · Blueprint §7 — hero exempt do --delay-max */
+  --t-icon:0ms;--t-divider:1400ms;--t-sub:1550ms;--t-actions:1700ms;--t-scroll:2100ms;--t-note:2350ms;
+}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 46%,rgba(184,169,138,.16),transparent 70%);pointer-events:none}
+.hero__grain{position:absolute;inset:0;opacity:.05;pointer-events:none;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.hero__icon{width:clamp(58px,7vw,84px);margin-bottom:1.6rem}
+.hero__h1{
+  font-family:var(--syne);font-weight:700;text-transform:uppercase;
+  font-size:clamp(2.7rem,9.5vw,7.2rem);letter-spacing:.05em;line-height:.95;color:var(--ink);
+}
+.hero__h1 .em .t-ch{color:var(--accent)}
+.hero__serif{
+  font-family:var(--serif);font-style:italic;font-weight:300;
+  font-size:clamp(1.5rem,3.6vw,2.7rem);color:var(--accent);margin-top:1.2rem;line-height:1.15;
+}
+.hero__divider{display:flex;align-items:center;gap:14px;width:min(300px,60vw);margin-top:2rem}
+.hero__divider i{flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(139,115,85,.45))}
+.hero__divider i:last-child{background:linear-gradient(to left,transparent,rgba(139,115,85,.45))}
+.hero__divider b{width:3px;height:3px;border-radius:50%;background:var(--accent)}
+.hero__sub{margin-top:2rem;font-weight:200;font-size:.66rem;letter-spacing:.45em;text-transform:uppercase;color:var(--stone)}
+.hero__actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:2.4rem}
+.hero__scroll{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.6rem;color:var(--stone);font-size:.58rem;letter-spacing:.3em;text-transform:uppercase}
+.hero__scroll i{width:1px;height:44px;background:linear-gradient(var(--gold),transparent);position:relative;overflow:hidden}
+.hero__scroll i::after{content:'';position:absolute;inset:0 0 auto;height:45%;background:var(--accent);animation:scrollDot 2s var(--ease-brand) infinite}
+@keyframes scrollDot{0%{transform:translateY(-110%)}100%{transform:translateY(260%)}}
+/* ── hero entrance · handoff do preloader (Blueprint §7 · A-C1) ──
+   Estados "fora" só existem com JS; o orquestrador adiciona
+   .hero.js--enter no T0 (véu levantando). Sem JS → hero visível.   */
+html.js .hero__stage{display:flex;flex-direction:column;align-items:center;will-change:transform,opacity}
+html.js .hero__icon,
+html.js .hero__sub,
+html.js .hero__actions,
+html.js .note-card{opacity:0;transform:translateY(var(--move-base));transition:opacity var(--dur-slow) var(--ease-brand),transform var(--dur-slow) var(--ease-brand);transition-delay:var(--enter-d,0ms)}
+html.js .hero__scroll{opacity:0;transition:opacity var(--dur-slow) var(--ease-brand);transition-delay:var(--t-scroll)}
+html.js .hero__icon{--enter-d:var(--t-icon)}
+html.js .hero__sub{--enter-d:var(--t-sub)}
+html.js .hero__actions{--enter-d:var(--t-actions)}
+html.js .note-card{--enter-d:var(--t-note)}
+html.js .hero.js--enter .hero__icon,
+html.js .hero.js--enter .hero__sub,
+html.js .hero.js--enter .hero__actions,
+html.js .hero.js--enter .note-card{opacity:1;transform:none}
+html.js .hero.js--enter .hero__scroll{opacity:1}
+html.js .hero.js--past .hero__scroll{opacity:0;pointer-events:none}
+/* divisor: traça do centro para as pontas; ponto por último (A-P3) */
+html.js .hero__divider i{transform:scaleX(0);transition:transform var(--dur-base) var(--ease-brand);transition-delay:var(--t-divider)}
+html.js .hero__divider i:first-child{transform-origin:right}
+html.js .hero__divider i:last-child{transform-origin:left}
+html.js .hero__divider b{transform:scale(0);transition:transform var(--dur-fast) var(--ease-brand);transition-delay:calc(var(--t-divider) + 320ms)}
+html.js .hero.js--enter .hero__divider i{transform:scaleX(1)}
+html.js .hero.js--enter .hero__divider b{transform:scale(1)}
+/* hero note card (GL disclaimer) */
+.note-card{
+  position:absolute;right:clamp(1rem,4vw,3.4rem);bottom:clamp(4.6rem,8vw,5.6rem);z-index:5;
+  width:min(300px,78vw);background:var(--white);border:1px solid var(--line);
+  border-radius:14px;padding:1.1rem;display:flex;flex-direction:column;gap:.7rem;text-align:left;
+  box-shadow:0 24px 50px -30px rgba(26,24,20,.28);
+}
+.note-card.js--hidden{opacity:0!important;transform:translateY(12px);pointer-events:none;transition:opacity var(--dur-fast) var(--ease-exit),transform var(--dur-fast) var(--ease-exit)}
+.note-card__img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
+.note-card p{font-size:.78rem;line-height:1.55;color:var(--stone)}
+.note-card__close{position:absolute;top:.8rem;right:.9rem;width:22px;height:22px;display:grid;place-items:center;color:var(--stone);transition:transform var(--dur-fast),color var(--dur-fast)}
+.note-card__close:hover{color:var(--ink);transform:rotate(90deg)}
+@media(max-width:700px){.note-card{display:none}}
+
+/* ── banner (GL illustration) ───────────── */
+.banner{position:relative;overflow:hidden;min-height:clamp(420px,72vh,700px);display:grid;place-items:center}
+.banner__img{position:absolute;inset:-6% 0;width:100%;height:112%;object-fit:cover;object-position:center 30%;will-change:transform}
+.banner__veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(26,24,20,.18),rgba(26,24,20,.34))}
+.banner__content{position:relative;z-index:2;text-align:center;padding:2rem var(--pad);max-width:820px}
+.banner__content .h-serif{color:var(--cream)}
+.banner__content .paragraph{color:rgba(247,244,239,.82);margin:1.2rem auto 0}
+.banner__frame{position:absolute;inset:clamp(.9rem,2.4vw,1.8rem);border:1px solid rgba(247,244,239,.28);pointer-events:none;z-index:2}
+
+/* ── manifesto / reasons (GL reasons) ───── */
+.reasons{display:grid;grid-template-columns:minmax(280px,.9fr) 1.1fr;gap:clamp(2.5rem,6vw,6rem)}
+@media(max-width:900px){.reasons{grid-template-columns:1fr}}
+.reasons__side{display:flex;flex-direction:column;align-items:flex-start;gap:1.6rem;position:sticky;top:7rem;align-self:start}
+@media(max-width:900px){.reasons__side{position:static}}
+.reasons__list{list-style:none}
+.reasons__item{padding-block:2.2rem;border-bottom:1px solid var(--line)}
+.reasons__item:first-child{padding-top:.4rem}
+.reasons__item:last-child{border-bottom:none}
+.reasons__item h3{font-family:var(--serif);font-style:italic;font-weight:400;font-size:1.65rem;margin-bottom:.7rem;display:flex;align-items:baseline;gap:1rem}
+.reasons__item h3 .n{font-family:var(--sans);font-weight:200;font-size:.66rem;letter-spacing:.2em;color:var(--gold)}
+
+/* ── swatches (cores) ───────────────────── */
+.swatch-row{
+  display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:1.6rem;
+  padding:1.15rem 0;border-bottom:1px dashed var(--line-md);cursor:pointer;transition:padding-left var(--dur-base) var(--ease-brand);
+}
+.swatch-row:hover{padding-left:.6rem}
+.swatch-row__chip{height:58px;border-radius:10px;border:1px solid rgba(26,24,20,.08);position:relative;overflow:hidden}
+.swatch-row__chip::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);transform:translateX(-110%);transition:transform var(--dur-slow) var(--ease-brand)}
+.swatch-row:hover .swatch-row__chip::after{transform:translateX(110%)}
+.swatch-row__name{font-family:var(--serif);font-style:italic;font-size:1.35rem;color:var(--ink)}
+.swatch-row__use{font-size:.78rem;color:var(--stone);margin-top:.15rem;max-width:46ch}
+.swatch-row__hex{font-weight:200;font-size:.7rem;letter-spacing:.14em;color:var(--stone);text-align:right;font-variant-numeric:tabular-nums;transition:color var(--dur-fast)}
+.swatch-row:hover .swatch-row__hex{color:var(--accent)}
+.opacity-strip{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-top:2rem}
+.opacity-strip span{flex:1;height:46px;display:grid;place-items:center;font-size:.58rem;letter-spacing:.08em;color:var(--ink)}
+
+/* ── typography scale ───────────────────── */
+.type-hero{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(2rem,6vw,5.5rem);align-items:end;margin-bottom:clamp(2.5rem,5vw,4rem)}
+@media(max-width:860px){.type-hero{grid-template-columns:1fr}}
+.type-hero .big{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(3.4rem,8vw,6.4rem);line-height:.98;color:var(--ink)}
+.type-hero .big em{color:var(--accent)}
+.type-meta{padding-top:1.1rem;border-top:1px solid var(--line);font-weight:200;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--warm);line-height:2}
+.scale-row{display:grid;grid-template-columns:170px 1fr;gap:2rem;align-items:baseline;padding:1.25rem 0;border-bottom:1px dashed var(--line-md)}
+@media(max-width:700px){.scale-row{grid-template-columns:1fr;gap:.3rem}}
+.scale-row:last-child{border-bottom:none}
+
+/* ── gallery (GL desing-dreams) ─────────── */
+.gallery-head{text-align:center;max-width:900px;margin-inline:auto;margin-bottom:clamp(2.5rem,6vw,4.5rem)}
+.gallery-head .h-serif .up{font-style:normal;font-family:var(--serif);font-weight:500}
+.gallery{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(.8rem,2vw,1.6rem);align-items:start}
+.g-item{border-radius:16px;overflow:hidden;position:relative}
+.g-item img{width:100%;height:100%;object-fit:cover;transition:transform var(--dur-grand) var(--ease-brand)}
+.g-item:hover img{transform:scale(1.045)}
+.g-item--1{grid-column:1/5;aspect-ratio:3/4;margin-top:clamp(2rem,6vw,5rem)}
+.g-item--2{grid-column:5/9;aspect-ratio:3/4.3}
+.g-item--3{grid-column:9/13;aspect-ratio:3/4;margin-top:clamp(3rem,8vw,7rem)}
+@media(max-width:700px){.g-item--1{grid-column:1/7}.g-item--2{grid-column:7/13}.g-item--3{grid-column:3/11;margin-top:0}}
+.g-cap{margin-top:.8rem;display:flex;justify-content:space-between;align-items:baseline;padding-inline:.2rem}
+.g-cap .label{color:var(--stone)}
+.g-cap i{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:.95rem}
+
+/* ── components panels ──────────────────── */
+.panel{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:clamp(1.4rem,3vw,2.4rem);position:relative}
+.panel + .panel{margin-top:1.4rem}
+.panel__label{font-weight:200;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem;display:flex;align-items:center;gap:.8rem}
+.panel__label::after{content:'';flex:1;height:1px;background:var(--line)}
+.demo-row{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+.comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+@media(max-width:860px){.comp-grid{grid-template-columns:1fr}}
+/* inputs */
+.field{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.15rem}
+.field label{font-weight:200;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--stone)}
+.input,textarea.input{
+  width:100%;background:transparent;border:none;border-bottom:1px solid var(--line-md);
+  padding:.65rem .1rem;font-size:.92rem;color:var(--ink);transition:border-color var(--dur-base);
+  border-radius:0;font-weight:300;
+}
+.input::placeholder{color:var(--warm)}
+.input:focus{outline:none;border-color:var(--accent)}
+textarea.input{resize:vertical;min-height:88px}
+.choice{display:flex;align-items:center;gap:.65rem;font-size:.85rem;color:var(--stone);cursor:pointer}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+.cbox{width:19px;height:19px;border:1px solid var(--line-md);border-radius:5px;display:grid;place-items:center;transition:var(--dur-fast);flex:none}
+.cbox svg{width:11px;height:11px;color:var(--cream);opacity:0;transform:scale(.4);transition:var(--dur-fast)}
+.choice input:checked+.cbox{background:var(--accent);border-color:var(--accent)}
+.choice input:checked+.cbox svg{opacity:1;transform:scale(1)}
+.rdot{width:19px;height:19px;border:1px solid var(--line-md);border-radius:50%;display:grid;place-items:center;transition:var(--dur-fast);flex:none}
+.rdot::after{content:'';width:9px;height:9px;border-radius:50%;background:var(--accent);transform:scale(0);transition:var(--dur-fast) var(--ease-brand)}
+.choice input:checked+.rdot{border-color:var(--accent)}
+.choice input:checked+.rdot::after{transform:scale(1)}
+.switch{width:44px;height:24px;border-radius:999px;background:var(--linen);border:1px solid var(--line-md);position:relative;transition:var(--dur-base);flex:none}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--warm);transition:var(--dur-base) var(--ease-brand)}
+.choice input:checked+.switch{background:var(--gold-lt);border-color:var(--gold)}
+.choice input:checked+.switch::after{left:22px;background:var(--accent)}
+/* ── forms · foco, validação e loading (A-H2 · §10) ─────────────
+   Cor de erro/sucesso é PROVISÓRIA (--error/--success); a motion é
+   definitiva: line-grow no foco, shake+mensagem no erro, check no
+   sucesso, e botão que morfa para loading→sucesso.                 */
+.field{position:relative}
+.field::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform var(--dur-base) var(--ease-brand);pointer-events:none}
+.field:focus-within::after{transform:scaleX(1)}
+.field__msg{position:absolute;top:100%;left:0;margin-top:3px;font-size:.62rem;letter-spacing:.04em;color:var(--stone);opacity:0;transform:translateY(-4px);transition:opacity var(--dur-fast) var(--ease-brand),transform var(--dur-fast) var(--ease-brand)}
+.field.is-error .field__msg{opacity:1;transform:none;color:var(--error)}
+.field.is-error .input{border-color:var(--error)}
+.field.is-error{animation:shake var(--dur-fast) var(--ease-brand)}
+.field.is-success .input{border-color:var(--success)}
+.field.is-success::before{content:'✓';position:absolute;right:.1rem;bottom:.5rem;font-size:.8rem;color:var(--success);animation:popIn var(--dur-base) var(--ease-brand)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.btn.is-loading,.btn.is-success{pointer-events:none}
+.btn__spin{width:15px;height:15px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin var(--dur-grand) linear infinite}
+.btn__check{width:16px;height:14px}
+.btn__check path{stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;stroke-dashoffset:20;animation:draw var(--dur-base) var(--ease-brand) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+/* badges & chips */
+.badge{display:inline-flex;align-items:center;gap:.45rem;font-weight:200;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;padding:.4rem .85rem;border-radius:999px;border:1px solid var(--line-md);color:var(--stone)}
+.badge b{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.badge--fill{background:var(--linen);border-color:transparent;color:var(--accent)}
+.badge--ink{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+.chip{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .95rem;border-radius:999px;background:var(--white);border:1px solid var(--line);font-size:.75rem;color:var(--stone);transition:var(--dur-fast)}
+.chip:hover{border-color:var(--gold);color:var(--ink)}
+/* cards demo */
+.mini-card{border:1px solid var(--line);border-radius:14px;padding:1.4rem;background:var(--cream);transition:transform var(--dur-base) var(--ease-brand),box-shadow var(--dur-base) var(--ease-brand),border-color var(--dur-base)}
+.mini-card:hover{transform:translateY(-5px);border-color:var(--line-md);box-shadow:0 26px 44px -30px rgba(26,24,20,.25)}
+.mini-card h4{font-family:var(--serif);font-style:italic;font-weight:400;font-size:1.3rem;margin-bottom:.4rem}
+.mini-card p{font-size:.8rem;color:var(--stone)}
+/* progress */
+.pbar{height:4px;border-radius:99px;background:var(--linen);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width var(--dur-grand) var(--ease-brand)}
+html.no-js .pbar i{width:66%}
+.spinner{width:26px;height:26px;border:1.6px solid var(--line-md);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── steps (GL steps) ───────────────────── */
+.steps{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2.5rem,6vw,5rem);align-items:center}
+@media(max-width:900px){.steps{grid-template-columns:1fr}}
+.steps__list{list-style:none;display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:76px 1fr;gap:1.6rem;padding-block:1.7rem;position:relative}
+.step + .step::before{content:'';position:absolute;left:38px;top:-14px;width:1px;height:28px;background:repeating-linear-gradient(var(--line-md) 0 4px,transparent 4px 9px)}
+.step__circle{
+  width:76px;height:76px;border-radius:50%;border:1px solid var(--line-md);
+  display:grid;place-items:center;font-family:var(--serif);font-style:italic;font-size:1.25rem;color:var(--accent);
+  background:var(--white);transition:var(--dur-base) var(--ease-brand);
+}
+.step:hover .step__circle{background:var(--ink);color:var(--cream);border-color:var(--ink);transform:rotate(-8deg)}
+.step h3{font-family:var(--serif);font-style:italic;font-weight:400;font-size:1.55rem;margin-bottom:.35rem}
+.steps__media{border-radius:18px;overflow:hidden;aspect-ratio:4/4.6;position:relative}
+.steps__media img{width:100%;height:112%;object-fit:cover}
+
+/* ── quote marquee (GL testimonials) ────── */
+.tmarquee{overflow:hidden;padding-block:.6rem}
+.tmarquee + .tmarquee{margin-top:1.3rem}
+.tmarquee__track{display:flex;gap:1.3rem;width:max-content;animation:marq 46s linear infinite}
+.tmarquee--rev .tmarquee__track{animation-direction:reverse}
+.tmarquee:hover .tmarquee__track{animation-play-state:paused}
+/* pausa acessível de TODOS os marquees (WCAG 2.2.2 · A-C3) */
+.marq-toggle{margin-top:1.4rem;font-weight:200;font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:var(--stone);border:1px solid var(--line-md);border-radius:999px;padding:.5rem 1.1rem;transition:color var(--dur-fast) var(--ease-brand),border-color var(--dur-fast) var(--ease-brand)}
+.marq-toggle:hover{color:var(--accent);border-color:var(--gold)}
+body.js--marq-paused .tmarquee__track,body.js--marq-paused .wband__track{animation-play-state:paused}
+.drag-body:focus-visible{outline:1px solid var(--accent);outline-offset:-3px}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tcard{
+  width:min(410px,84vw);flex:none;background:var(--white);border:1px solid var(--line);
+  border-radius:16px;padding:1.7rem;display:flex;flex-direction:column;gap:1rem;
+}
+.tcard__stars{color:var(--gold);letter-spacing:.28em;font-size:.8rem}
+.tcard__quote{font-family:var(--serif);font-style:italic;font-size:1.18rem;line-height:1.45;color:var(--charcoal)}
+.tcard__who{font-size:.72rem;letter-spacing:.1em;color:var(--stone);text-transform:uppercase}
+.tcard__who b{display:block;font-weight:400;color:var(--ink);letter-spacing:.16em}
+
+/* ── word banner (GL discover track) ────── */
+.wband{border-block:1px solid var(--line);padding-block:1.5rem;overflow:hidden;background:var(--white)}
+.wband__track{display:flex;gap:3.2rem;width:max-content;animation:marq 34s linear infinite;align-items:baseline}
+.wband__track span{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(1.5rem,3.2vw,2.4rem);color:var(--ink);white-space:nowrap}
+.wband__track span:nth-child(even){color:var(--gold);font-size:.72em}
+
+/* ── drag slider (GL portfolio drug) ────── */
+.drag-zone{position:relative;cursor:none}
+.drag-body{display:flex;gap:clamp(.9rem,2vw,1.5rem);overflow-x:auto;scrollbar-width:none;padding-block:.5rem;padding-inline:var(--pad);scroll-behavior:auto}
+.drag-body::-webkit-scrollbar{display:none}
+.drag-slide{flex:none;width:clamp(240px,26vw,360px);border-radius:16px;overflow:hidden;aspect-ratio:3/4;position:relative}
+.drag-slide img{width:100%;height:100%;object-fit:cover;pointer-events:none;transition:transform var(--dur-grand) var(--ease-brand)}
+.drag-slide:hover img{transform:scale(1.04)}
+.drag-slide__tag{position:absolute;left:1rem;bottom:1rem;z-index:2;background:rgba(247,244,239,.86);backdrop-filter:blur(8px);border-radius:999px;padding:.38rem .9rem;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
+.drag-cursor{
+  position:fixed;z-index:60;left:0;top:0;pointer-events:none;
+  width:92px;height:92px;border-radius:50%;background:var(--ink);color:var(--cream);
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;
+  transform:translate(-50%,-50%) scale(0);transition:transform var(--dur-base) var(--ease-brand);
+  will-change:transform;
+}
+.drag-cursor.js--active{transform:translate(-50%,-50%) scale(1)}
+.drag-cursor.js--press{transform:translate(-50%,-50%) scale(.82)}
+.drag-cursor svg{width:9px;height:9px}
+
+/* ── CTA banner (GL showroom) ───────────── */
+.cta-banner{position:relative;overflow:hidden;min-height:clamp(430px,68vh,640px);display:grid;place-items:center;text-align:center}
+.cta-banner__img{position:absolute;inset:-6% 0;width:100%;height:112%;object-fit:cover;will-change:transform;filter:saturate(.92)}
+.cta-banner__veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(26,24,20,.30),rgba(26,24,20,.44))}
+.cta-banner__content{position:relative;z-index:2;padding:2rem var(--pad);max-width:760px;display:flex;flex-direction:column;align-items:center;gap:1.4rem}
+.cta-banner__content .h-serif{color:var(--cream)}
+.cta-banner__content .paragraph{color:rgba(247,244,239,.85)}
+
+/* ── FAQ (GL faq) ───────────────────────── */
+.faq-wrap{max-width:860px;margin-inline:auto}
+.faq{border-top:1px solid var(--line);position:relative;isolation:isolate}
+.faq__item{border-bottom:1px solid var(--line);position:relative;transition:opacity var(--dur-fast)}
+.faq:hover .faq__item:not(:hover){opacity:.55}
+.faq__item::before{content:'';position:absolute;inset:-1px -2.2rem;background:transparent;transition:background var(--dur-base);z-index:-1;border-radius:12px}
+.faq__item.js--active::before{background:var(--linen)}
+.faq__sum{display:flex;align-items:center;justify-content:space-between;gap:1.4rem;padding:1.55rem 0;cursor:pointer}
+.faq__q{font-family:var(--serif);font-weight:400;font-size:1.32rem;color:var(--ink);transition:var(--dur-base)}
+.faq__item.js--active .faq__q{font-style:italic;color:var(--accent)}
+.faq__ico{width:30px;height:30px;flex:none;position:relative;transition:transform var(--dur-base) var(--ease-brand)}
+.faq__ico::before,.faq__ico::after{content:'';position:absolute;background:var(--stone);left:50%;top:50%;transition:var(--dur-base)}
+.faq__ico::before{width:14px;height:1.3px;transform:translate(-50%,-50%)}
+.faq__ico::after{width:1.3px;height:14px;transform:translate(-50%,-50%)}
+.faq__item.js--active .faq__ico{transform:rotate(180deg)}
+.faq__item.js--active .faq__ico::after{opacity:0;transform:translate(-50%,-50%) scaleY(0)}
+.faq__body{max-height:0;overflow:hidden;transition:max-height var(--dur-slow) var(--ease-brand)}
+.faq__body p{padding-bottom:1.5rem;font-size:.9rem;color:var(--stone);max-width:62ch}
+
+/* ── footer ─────────────────────────────── */
+.footer{background:var(--linen);padding-top:clamp(3.5rem,7vw,6rem);position:relative;overflow:hidden}
+.footer__grid{display:grid;grid-template-columns:minmax(300px,430px) 1fr;gap:clamp(2.5rem,6vw,6rem);align-items:start}
+@media(max-width:900px){.footer__grid{grid-template-columns:1fr}}
+.form-card{background:var(--white);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.form-card__img{height:130px;position:relative;overflow:hidden}
+.form-card__img img{width:100%;height:100%;object-fit:cover;object-position:center 28%}
+.form-card__body{padding:1.8rem}
+.form-card h3{font-family:var(--serif);font-style:italic;font-weight:400;font-size:1.7rem;margin-bottom:1.2rem}
+.form-inline{display:flex;gap:.6rem;align-items:flex-end}
+.form-inline .input{flex:1}
+.footer__cols{display:flex;flex-wrap:wrap;gap:clamp(2rem,5vw,4.5rem);justify-content:space-between}
+.footer__col ul{list-style:none;display:flex;flex-direction:column;gap:.65rem;margin-top:1rem}
+.footer__col a{font-size:.85rem;color:var(--stone);transition:color var(--dur-fast),padding-left var(--dur-fast)}
+.footer__col a:hover{color:var(--accent);padding-left:.4rem}
+.footer__brand-xl{
+  font-family:var(--serif);font-style:italic;font-weight:300;
+  font-size:clamp(3.4rem,14.5vw,11.5rem);line-height:1;text-align:center;
+  margin-top:clamp(2.5rem,6vw,4.5rem);
+  background:linear-gradient(180deg,var(--accent),rgba(139,115,85,.06));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  user-select:none;
+}
+.footer__bottom{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--line-md);margin-top:2.4rem;padding-block:1.4rem;font-weight:200;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--stone)}
+.footer__bottom a:hover{color:var(--accent)}
+
+/* ── popup (GL popup) ───────────────────── */
+.popup{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:1.2rem;opacity:0;pointer-events:none;transition:opacity var(--dur-fast) var(--ease-exit)}
+.popup.js--active{opacity:1;pointer-events:auto;transition:opacity var(--dur-base) var(--ease-brand)}
+.popup__overlay{position:absolute;inset:0;background:rgba(26,24,20,.44);backdrop-filter:blur(8px)}
+.popup__card{
+  position:relative;z-index:2;width:min(880px,94vw);max-height:90vh;overflow:auto;
+  background:var(--cream);border-radius:20px;display:grid;grid-template-columns:.9fr 1.1fr;
+  transform:translateY(26px) scale(.97);transition:transform var(--dur-fast) var(--ease-exit);
+}
+.popup.js--active .popup__card{transform:none;transition:transform var(--dur-base) var(--ease-brand)}
+@media(max-width:760px){.popup__card{grid-template-columns:1fr}.popup__media{display:none}}
+.popup__media{position:relative;overflow:hidden}
+.popup__media img{width:100%;height:100%;object-fit:cover}
+.popup__media::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(26,24,20,.35),transparent 55%)}
+.popup__media figcaption{position:absolute;left:1.4rem;bottom:1.2rem;color:var(--cream);font-family:var(--serif);font-style:italic;font-size:1.05rem;z-index:2}
+.popup__body{padding:clamp(1.6rem,4vw,2.6rem)}
+.popup__body h2{font-family:var(--serif);font-style:italic;font-weight:400;font-size:2rem;margin-bottom:.4rem}
+.popup__x{position:absolute;top:1rem;right:1rem;z-index:3;width:38px;height:38px;border-radius:50%;background:var(--cream);border:1px solid var(--line);display:grid;place-items:center;transition:var(--dur-base)}
+.popup__x:hover{transform:rotate(90deg);color:var(--accent)}
+
+/* ── motion cells ───────────────────────── */
+.anim-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem}
+@media(max-width:900px){.anim-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:540px){.anim-grid{grid-template-columns:1fr}}
+.anim-cell{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:1.4rem;cursor:pointer;transition:border-color var(--dur-fast)}
+.anim-cell:hover{border-color:var(--gold)}
+.anim-demo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--accent));margin-bottom:1rem}
+.anim-cell.play .anim-demo{animation:var(--anim)}
+.anim-cell h4{font-family:var(--serif);font-style:italic;font-weight:400;font-size:1.15rem}
+.anim-cell p{font-weight:200;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);margin-top:.3rem}
+@keyframes aFadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes aBlur{from{opacity:0;filter:blur(10px)}to{opacity:1;filter:blur(0)}}
+@keyframes aScale{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+@keyframes aLetter{from{transform:translateY(120%) rotate(8deg)}to{transform:none}}
+@keyframes aFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes aPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes aSlide{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+
+/* ── component states · press-give & feedback (§11 · A-H6 · A-M3) ──
+   "ceder": tudo que se toca comprime pouco e devolve rápido.
+   O :active traz a própria transição instant; soltar volta pela
+   transição-base do elemento (afunda rápido, assenta suave).        */
+.btn:active{transform:scale(var(--scale-press));transition:transform var(--dur-instant) var(--ease-brand)}
+.chip:active{transform:scale(var(--scale-press-chip));border-color:var(--gold);color:var(--ink);transition:transform var(--dur-instant) var(--ease-brand)}
+.anim-cell:active{transform:scale(var(--scale-press-card));transition:transform var(--dur-instant) var(--ease-brand)}
+.faq__sum:active{transform:scale(.995);transition:transform var(--dur-instant) var(--ease-brand)}
+.burger:active{transform:scale(.92);transition:transform var(--dur-instant) var(--ease-brand)}
+.popup__x:active{transform:rotate(90deg) scale(.9);transition:transform var(--dur-instant) var(--ease-brand)}
+.note-card__close:active{transform:rotate(90deg) scale(.9);transition:transform var(--dur-instant) var(--ease-brand)}
+/* anim-cell: prévia do gesto no hover, em baixa opacidade (A-M3) */
+.anim-cell:hover:not(.play) .anim-demo{animation:var(--anim);opacity:.45}
+/* accordion: conteúdo interno pousa logo após o painel abrir (§10) */
+html.js .faq__body p{opacity:0;transform:translateY(8px);transition:opacity var(--dur-base) var(--ease-brand),transform var(--dur-base) var(--ease-brand)}
+html.js .faq__item.js--active .faq__body p{opacity:1;transform:none;transition-delay:120ms}
+
+@media (prefers-reduced-motion:reduce){
+  /* Variante reduzida PREMIUM (§16 · A-C3): a "edição impressa".
+     Preserva hierarquia e orientação por OPACIDADE/COR; remove
+     deslocamento, escala, blur, parallax e todos os loops.          */
+  *{animation:none!important}
+  *{transition-property:opacity,color,background-color,border-color,box-shadow,clip-path!important;
+    transition-duration:var(--dur-fast)!important;transition-timing-function:var(--ease-brand)!important}
+  /* zera transforms deslocados → estado final (o fade continua) */
+  html.js [data-reveal],html.js .t-ch,
+  html.js .hero__icon,html.js .hero__sub,html.js .hero__actions,html.js .note-card,html.js .hero__scroll,
+  html.js .hero__divider i,html.js .hero__divider b{transform:none!important}
+  html.js [data-reveal="mask"]{clip-path:none!important}
+  /* títulos: fade inteiro em vez de letra a letra */
+  html.js [data-title]{opacity:0}
+  html.js [data-title].js--active{opacity:1}
+  /* imagens: só fade, sem blur (§16) */
+  html.js .banner__img,html.js .cta-banner__img,html.js .g-item img,html.js .steps__media img,html.js .drag-slide img,html.js .form-card__img img,html.js .popup__media img{filter:none!important}
+  /* marquees viram faixas estáticas e roláveis; símbolo do preloader visível; check sem "draw" */
+  .tmarquee,.wband{overflow-x:auto}
+  .preloader img{opacity:1}
+  .btn__check path{stroke-dashoffset:0!important}
+}
+</style>
+</head>
+<body>
+
+<!-- preloader -->
+<div class="preloader" id="preloader"><img src="../raw_files/matchpoint-logo-symbol-light.png" alt="Match Point"/></div>
+
+<!-- header -->
+<header class="header" id="header">
+  <div class="header__inner">
+    <a class="brand" href="#hero">
+      <img src="../raw_files/matchpoint-logo-symbol-light.png" alt=""/>
+      <span class="brand__t">
+        <span class="brand__name">MATCH <em>POINT</em></span>
+        <span class="brand__sub">Design System</span>
+      </span>
+    </a>
+    <nav class="header__links" id="navLinks">
+      <a class="hlink" href="#manifesto" data-hover="Manifesto">Manifesto</a>
+      <a class="hlink" href="#cores" data-hover="Cores">Cores</a>
+      <a class="hlink" href="#tipografia" data-hover="Tipografia">Tipografia</a>
+      <a class="hlink" href="#componentes" data-hover="Componentes">Componentes</a>
+      <a class="hlink" href="#retratos" data-hover="Retratos">Retratos</a>
+      <a class="hlink" href="#faq" data-hover="FAQ">FAQ</a>
+    </nav>
+    <div class="header__cta">
+      <button class="btn btn--light btn--sm" data-circle data-open-popup>Fale conosco</button>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- hero -->
+<section class="hero" id="hero">
+  <div class="hero__grain"></div>
+  <div class="hero__stage">
+    <img class="hero__icon" src="../raw_files/matchpoint-logo-symbol-light.png" alt=""/>
+    <h1 class="hero__h1">
+      <span data-title data-stagger=".045" data-delay=".15">MATCH</span>
+      <span class="em" data-title data-stagger=".045" data-delay=".4">POINT</span>
+    </h1>
+    <div class="hero__serif" data-title data-split="words" data-stagger=".09" data-delay=".9">o ponto exato para a sua marca</div>
+    <div class="hero__divider"><i></i><b></b><i></i></div>
+    <div class="hero__sub">Media &amp; Performance · Sistema de Design · v2.0</div>
+    <div class="hero__actions">
+      <a class="btn" data-circle href="#componentes">Explorar o sistema</a>
+      <a class="btn btn--light" data-circle href="#manifesto">Manifesto</a>
+    </div>
+  </div>
+  <div class="hero__scroll"><i></i>role</div>
+
+  <aside class="note-card" id="noteCard">
+    <button class="note-card__close" id="noteClose" aria-label="Fechar">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l10 10M11 1L1 11"/></svg>
+    </button>
+    <img class="note-card__img" src="../raw_files/220626-megan-0075-final.jpg" alt=""/>
+    <p>Procurando o kit completo da identidade? <br/>Acesse o brand kit com logotipos, variações e aplicações.</p>
+    <a class="link" href="#tipografia">Ver fundamentos</a>
+  </aside>
+</section>
+
+<!-- banner illustration -->
+<section class="banner" data-parallax-zone>
+  <img class="banner__img" src="../raw_files/hero-perfis.png" alt="" data-parallax="0.12"/>
+  <div class="banner__veil"></div>
+  <div class="banner__frame"></div>
+  <div class="banner__content">
+    <div class="h-serif h-lg" data-title data-split="words" data-stagger=".08">Entre a estratégia e a estética, existe um ponto exato.</div>
+    <p class="paragraph" data-reveal>Este documento reúne a linguagem visual oficial da Match Point — delicada nos detalhes, precisa nas decisões.</p>
+  </div>
+</section>
+
+<!-- manifesto -->
+<section class="section" id="manifesto">
+  <div class="container">
+    <div class="reasons">
+      <div class="reasons__side">
+        <span class="subheading" data-reveal="fade">Manifesto</span>
+        <h2 class="h-serif h-lg" data-title data-split="words" data-stagger=".07">Por que um sistema?</h2>
+        <p class="paragraph" data-reveal="mask">Quatro princípios sustentam cada tela, peça e campanha — para que a marca fale sempre com a mesma voz.</p>
+        <button class="btn" data-circle data-open-popup data-reveal>Vamos começar</button>
+      </div>
+      <div class="reasons__body">
+        <ul class="reasons__list">
+          <li class="reasons__item" data-reveal>
+            <h3><span class="n" data-count="1" data-pad="2">01</span>Consistência silenciosa</h3>
+            <p class="paragraph">Espaçamentos em ritmo de 8pt, uma única família de acentos e regras claras de hierarquia. A consistência não aparece — ela se sente.</p>
+          </li>
+          <li class="reasons__item" data-reveal>
+            <h3><span class="n" data-count="2" data-pad="2">02</span>Delicadeza editorial</h3>
+            <p class="paragraph">Serifas italianas, linhas finas e muito respiro. Cada seção é composta como uma página de revista — nunca como um template.</p>
+          </li>
+          <li class="reasons__item" data-reveal>
+            <h3><span class="n" data-count="3" data-pad="2">03</span>Movimento com propósito</h3>
+            <p class="paragraph">Revelações letra a letra, paralaxe suave e micro-interações discretas. O movimento guia o olhar; jamais o disputa.</p>
+          </li>
+          <li class="reasons__item" data-reveal>
+            <h3><span class="n" data-count="4" data-pad="2">04</span>Clareza que converte</h3>
+            <p class="paragraph">Somos mídia e performance: cada componente existe para comunicar com precisão e levar à ação com elegância.</p>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- word band -->
+<div class="wband" aria-hidden="true">
+  <div class="wband__track">
+    <span>tipografia</span><span>·</span><span>cores</span><span>·</span><span>componentes</span><span>·</span><span>movimento</span><span>·</span><span>retratos</span><span>·</span>
+    <span>tipografia</span><span>·</span><span>cores</span><span>·</span><span>componentes</span><span>·</span><span>movimento</span><span>·</span><span>retratos</span><span>·</span>
+  </div>
+</div>
+
+<!-- cores -->
+<section class="section" id="cores" style="background:var(--white)">
+  <div class="container">
+    <div class="reasons">
+      <div class="reasons__side">
+        <span class="subheading" data-reveal="fade">Paleta oficial</span>
+        <h2 class="h-serif h-lg" data-title data-split="words" data-stagger=".07">Cores que sussurram</h2>
+        <p class="paragraph" data-reveal>Neutros quentes e um único acento dourado. Clique em qualquer cor para copiar o valor.</p>
+        <div class="opacity-strip" data-reveal aria-label="Opacidades do Sandgold">
+          <span style="background:#B8A98A">100</span>
+          <span style="background:rgba(184,169,138,.8)">80</span>
+          <span style="background:rgba(184,169,138,.6)">60</span>
+          <span style="background:rgba(184,169,138,.4)">40</span>
+          <span style="background:rgba(184,169,138,.2)">20</span>
+          <span style="background:rgba(184,169,138,.08)">08</span>
+        </div>
+      </div>
+      <div class="reasons__body">
+        <div class="swatch-row" data-copy="#1A1814" data-reveal>
+          <div class="swatch-row__chip" style="background:#1A1814"></div>
+          <div><div class="swatch-row__name">Obsidian</div><div class="swatch-row__use">Cor primária — títulos, texto e fundos de contraste. AAA sobre cream.</div></div>
+          <div class="swatch-row__hex">#1A1814<br/>rgb 26·24·20</div>
+        </div>
+        <div class="swatch-row" data-copy="#2E2C29" data-reveal>
+          <div class="swatch-row__chip" style="background:#2E2C29"></div>
+          <div><div class="swatch-row__name">Charcoal</div><div class="swatch-row__use">Secundária — superfícies escuras e texto de destaque.</div></div>
+          <div class="swatch-row__hex">#2E2C29<br/>rgb 46·44·41</div>
+        </div>
+        <div class="swatch-row" data-copy="#6B6660" data-reveal>
+          <div class="swatch-row__chip" style="background:#6B6660"></div>
+          <div><div class="swatch-row__name">Stone</div><div class="swatch-row__use">Textos de apoio, legendas e elementos discretos. AA.</div></div>
+          <div class="swatch-row__hex">#6B6660<br/>rgb 107·102·96</div>
+        </div>
+        <div class="swatch-row" data-copy="#EDE9E3" data-reveal>
+          <div class="swatch-row__chip" style="background:#EDE9E3"></div>
+          <div><div class="swatch-row__name">Linen</div><div class="swatch-row__use">Fundos alternados, faixas e estados hover suaves.</div></div>
+          <div class="swatch-row__hex">#EDE9E3<br/>rgb 237·233·227</div>
+        </div>
+        <div class="swatch-row" data-copy="#F7F4EF" data-reveal>
+          <div class="swatch-row__chip" style="background:#F7F4EF;border-color:rgba(26,24,20,.12)"></div>
+          <div><div class="swatch-row__name">Cream</div><div class="swatch-row__use">Fundo base de todas as páginas — quente e sereno.</div></div>
+          <div class="swatch-row__hex">#F7F4EF<br/>rgb 247·244·239</div>
+        </div>
+        <div class="swatch-row" data-copy="#B8A98A" data-reveal>
+          <div class="swatch-row__chip" style="background:#B8A98A"></div>
+          <div><div class="swatch-row__name">Sandgold</div><div class="swatch-row__use">O único acento — linhas, detalhes, hovers e destaques.</div></div>
+          <div class="swatch-row__hex">#B8A98A<br/>hsl 41·26·63</div>
+        </div>
+        <div class="swatch-row" data-copy="#8B7355" data-reveal>
+          <div class="swatch-row__chip" style="background:#8B7355"></div>
+          <div><div class="swatch-row__name">Accent</div><div class="swatch-row__use">Dourado profundo — links, itálicos e estados ativos. AA sobre cream.</div></div>
+          <div class="swatch-row__hex">#8B7355<br/>hsl 30·24·44</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- tipografia -->
+<section class="section" id="tipografia">
+  <div class="container">
+    <span class="subheading" data-reveal="fade">Tipografia</span>
+    <div class="type-hero" style="margin-top:1.6rem">
+      <div>
+        <div class="big" data-title data-split="words" data-stagger=".08">A voz é <em>serifada.</em></div>
+        <div class="type-meta" data-reveal>
+          Cormorant Garamond · Italic 300–500 — protagonista<br/>
+          uso · títulos de seção · citações · números · navegação editorial
+        </div>
+      </div>
+      <div data-reveal="right">
+        <p class="paragraph paragraph--lg">A Cormorant Garamond conduz quase toda a hierarquia. O Syne aparece uma única vez — no H1 — como assinatura. O Outfit sustenta a leitura com leveza.</p>
+        <div class="type-meta" style="margin-top:1.4rem">
+          Syne 700 · exclusivo do H1 / logotipo<br/>
+          Outfit 200–400 · corpo, labels e UI
+        </div>
+      </div>
+    </div>
+
+    <div data-reveal>
+      <div class="scale-row"><span class="label">H1 · Syne 700 · único</span><div style="font-family:var(--syne);font-weight:700;font-size:clamp(2rem,5vw,3.4rem);letter-spacing:.05em;text-transform:uppercase;line-height:1">Match Point</div></div>
+      <div class="scale-row"><span class="label">H2 · Cormorant It. 400</span><div class="h-serif" style="font-size:clamp(1.8rem,4vw,2.7rem)">Performance que converte</div></div>
+      <div class="scale-row"><span class="label">H3 · Cormorant It. 400</span><div class="h-serif" style="font-size:1.9rem">Estratégia orientada por dados</div></div>
+      <div class="scale-row"><span class="label">H4 · Cormorant 500</span><div style="font-family:var(--serif);font-weight:500;font-size:1.45rem">Mídia com precisão artesanal</div></div>
+      <div class="scale-row"><span class="label">Citação · Cormorant It. 300</span><div class="h-serif" style="font-weight:300;font-size:1.5rem;color:var(--accent)">"O ponto decisivo entre ver e escolher."</div></div>
+      <div class="scale-row"><span class="label">Body L · Outfit 300</span><div class="paragraph paragraph--lg" style="max-width:58ch">Conectamos marcas ao público certo com campanhas construídas sobre dados reais e criatividade estratégica.</div></div>
+      <div class="scale-row"><span class="label">Body · Outfit 300</span><div class="paragraph">Inteligência de mercado aplicada a cada etapa do funil de crescimento.</div></div>
+      <div class="scale-row"><span class="label">Caption · Outfit 300</span><div style="font-size:.74rem;color:var(--warm)">Legendas, metadados e notas de rodapé.</div></div>
+      <div class="scale-row"><span class="label">Label · Outfit 200</span><div class="label" style="color:var(--stone)">Meta Ads · Google Ads · Analytics · Media Planning</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- gallery -->
+<section class="section" id="galeria" style="background:var(--white)">
+  <div class="container">
+    <div class="gallery-head">
+      <div class="h-serif h-xl" data-title data-split="words" data-stagger=".09">Veja a marca <br/><span class="up">ganhar vida</span></div>
+    </div>
+    <div class="gallery">
+      <figure class="g-item g-item--1" data-reveal data-parallax-zone>
+        <img loading="lazy" decoding="async" src="../raw_files/220626-megan-0156-final.jpg" alt="Fundadoras — retrato em dupla" data-parallax="0.07"/>
+      </figure>
+      <figure class="g-item g-item--2" data-reveal data-parallax-zone>
+        <img loading="lazy" decoding="async" src="../raw_files/220626-megan-0125-final.jpg" alt="Retrato editorial — poltrona" data-parallax="0.05"/>
+      </figure>
+      <figure class="g-item g-item--3" data-reveal data-parallax-zone>
+        <img loading="lazy" decoding="async" src="../raw_files/220626-megan-0319-final.jpg" alt="Retrato — sorriso" data-parallax="0.07"/>
+      </figure>
+    </div>
+    <div class="g-cap" data-reveal>
+      <span class="label">Fotografia oficial · estúdio</span>
+      <i>tons quentes · fundo taupe · luz suave</i>
+    </div>
+  </div>
+</section>
+
+<!-- componentes -->
+<section class="section" id="componentes">
+  <div class="container">
+    <span class="subheading" data-reveal="fade">Biblioteca</span>
+    <h2 class="h-serif h-lg" style="margin-top:1.4rem;margin-bottom:clamp(2rem,5vw,3.4rem)" data-title data-split="words" data-stagger=".07">Componentes no ponto</h2>
+
+    <div class="panel" data-reveal>
+      <span class="panel__label">Botões · preenchimento radial no hover</span>
+      <div class="demo-row">
+        <button class="btn" data-circle>Primário</button>
+        <button class="btn btn--gold" data-circle>Dourado</button>
+        <button class="btn btn--light" data-circle>Contorno</button>
+        <a class="link" href="#">Link editorial</a>
+        <button class="btn btn--sm" data-circle>Pequeno</button>
+        <button class="btn" disabled>Desativado</button>
+        <button class="btn btn--light" data-circle id="loadDemo">Carregar</button>
+      </div>
+    </div>
+
+    <div class="comp-grid" style="margin-top:1.4rem">
+      <div class="panel" data-reveal>
+        <span class="panel__label">Formulário · linhas finas</span>
+        <div class="field"><label>Nome completo</label><input class="input" type="text" placeholder="Seu nome"/></div>
+        <div class="field"><label>E-mail</label><input class="input" type="email" placeholder="voce@empresa.com"/></div>
+        <div class="field"><label>Mensagem</label><textarea class="input" placeholder="Escreva aqui…"></textarea></div>
+        <div class="demo-row" style="gap:1.4rem;margin-top:.4rem">
+          <label class="choice"><input type="checkbox" checked/><span class="cbox"><svg viewBox="0 0 12 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l3.5 3.5L11 1"/></svg></span>Aceito os termos</label>
+          <label class="choice"><input type="radio" name="pl" checked/><span class="rdot"></span>Mensal</label>
+          <label class="choice"><input type="radio" name="pl"/><span class="rdot"></span>Anual</label>
+          <label class="choice"><input type="checkbox" checked/><span class="switch"></span>Novidades</label>
+        </div>
+      </div>
+      <div class="panel" data-reveal>
+        <span class="panel__label">Badges · chips · feedback</span>
+        <div class="demo-row" style="gap:.6rem">
+          <span class="badge"><b></b>Rascunho</span>
+          <span class="badge badge--fill"><b></b>Em revisão</span>
+          <span class="badge badge--ink">Aprovado</span>
+          <span class="chip">Meta Ads</span>
+          <span class="chip">Google Ads</span>
+          <span class="chip">Analytics</span>
+        </div>
+        <div style="margin-top:1.8rem">
+          <div class="label" style="margin-bottom:.7rem">Progresso da campanha · <span data-count="66" data-suffix="%">66%</span></div>
+          <div class="pbar" data-fill="66"><i></i></div>
+        </div>
+        <div class="demo-row" style="margin-top:1.8rem;gap:1.6rem;align-items:center">
+          <div class="spinner" aria-label="Carregando"></div>
+          <span class="paragraph" style="font-size:.8rem">Loader circular · 900ms · linear</span>
+        </div>
+        <div class="comp-grid" style="margin-top:1.8rem;gap:.9rem">
+          <div class="mini-card"><h4>Card padrão</h4><p>Eleva-se 5px no hover com sombra quente.</p></div>
+          <div class="mini-card" style="background:var(--ink);border-color:var(--ink)"><h4 style="color:var(--cream)">Card contraste</h4><p style="color:var(--warm)">Para métricas e destaques.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- steps -->
+<section class="section" style="background:var(--white)">
+  <div class="container">
+    <div class="steps">
+      <div>
+        <span class="subheading" data-reveal="fade">Como aplicar</span>
+        <h2 class="h-serif h-lg" style="margin-top:1.3rem;margin-bottom:1rem" data-title data-split="words" data-stagger=".07">Três passos simples</h2>
+        <ul class="steps__list">
+          <li class="step" data-reveal>
+            <div class="step__circle">01</div>
+            <div><h3>Absorva os fundamentos</h3><p class="paragraph">Comece por cores e tipografia. Eles definem 80% da percepção da marca em qualquer peça.</p></div>
+          </li>
+          <li class="step" data-reveal>
+            <div class="step__circle">02</div>
+            <div><h3>Componha com os blocos</h3><p class="paragraph">Use os componentes documentados — botões, formulários, cards — sem reinventar comportamentos.</p></div>
+          </li>
+          <li class="step" data-reveal>
+            <div class="step__circle">03</div>
+            <div><h3>Anime com contenção</h3><p class="paragraph">Aplique as revelações e o paralaxe da biblioteca de movimento. Menos é sempre mais elegante.</p></div>
+          </li>
+        </ul>
+      </div>
+      <figure class="steps__media" data-reveal="right" data-parallax-zone>
+        <img loading="lazy" decoding="async" src="../raw_files/220626-megan-0182-final.jpg" alt="Aplicação digital" data-parallax="0.08"/>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- vozes / marquee -->
+<section class="section" style="padding-inline:0;overflow:hidden">
+  <div class="container" style="margin-bottom:clamp(2rem,5vw,3.2rem)">
+    <span class="subheading" data-reveal="fade">Tom de voz</span>
+    <h2 class="h-serif h-lg" style="margin-top:1.3rem" data-title data-split="words" data-stagger=".07">Como a marca fala</h2>
+    <button class="marq-toggle" id="marqToggle" aria-pressed="false">Pausar movimento</button>
+  </div>
+  <div class="tmarquee" data-reveal="fade">
+    <div class="tmarquee__track">
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Aumentamos o ROAS em 3,2× com uma reestruturação de funil baseada em dados reais de audiência."</p><div class="tcard__who"><b>Analítica e precisa</b>resultados mensuráveis, sem ruído</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Sua marca merece mais do que visibilidade. Merece relevância no momento certo."</p><div class="tcard__who"><b>Sofisticada e direta</b>economia de palavras, alto impacto</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Trabalhamos com você, não para você. O seu sucesso define o nosso."</p><div class="tcard__who"><b>Estratégica e parceira</b>co-pilotas do crescimento</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Elegância não é ornamento — é clareza no momento decisivo."</p><div class="tcard__who"><b>Editorial</b>delicadeza com propósito</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Aumentamos o ROAS em 3,2× com uma reestruturação de funil baseada em dados reais de audiência."</p><div class="tcard__who"><b>Analítica e precisa</b>resultados mensuráveis, sem ruído</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Sua marca merece mais do que visibilidade. Merece relevância no momento certo."</p><div class="tcard__who"><b>Sofisticada e direta</b>economia de palavras, alto impacto</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Trabalhamos com você, não para você. O seu sucesso define o nosso."</p><div class="tcard__who"><b>Estratégica e parceira</b>co-pilotas do crescimento</div></div>
+      <div class="tcard"><div class="tcard__stars">★★★★★</div><p class="tcard__quote">"Elegância não é ornamento — é clareza no momento decisivo."</p><div class="tcard__who"><b>Editorial</b>delicadeza com propósito</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- retratos / drag slider -->
+<section class="section" id="retratos" style="background:var(--white);padding-inline:0;overflow:hidden">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap;margin-bottom:clamp(1.8rem,4vw,3rem)">
+    <div>
+      <span class="subheading" data-reveal="fade">Retratos da marca</span>
+      <h2 class="h-serif h-lg" style="margin-top:1.3rem" data-title data-split="words" data-stagger=".07">Permita-se arrastar</h2>
+    </div>
+    <p class="paragraph" style="max-width:34ch" data-reveal>Fotografia oficial em estúdio — luz suave, fundo taupe e a dupla que dá rosto à Match Point.</p>
+  </div>
+  <div class="drag-zone" id="dragZone">
+    <div class="drag-body" id="dragBody" tabindex="0" role="region" aria-label="Retratos da marca — arraste ou use as setas ← →">
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0013-final.jpg" alt=""/><span class="drag-slide__tag">Direção · Megan</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0059-final.jpg" alt=""/><span class="drag-slide__tag">Direção · Jennifer</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0100-final.jpg" alt=""/><span class="drag-slide__tag">Editorial 01</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0132-final.jpg" alt=""/><span class="drag-slide__tag">A dupla</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0290-final.jpg" alt=""/><span class="drag-slide__tag">Editorial 02</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0075-final.jpg" alt=""/><span class="drag-slide__tag">Editorial 03</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0156-final.jpg" alt=""/><span class="drag-slide__tag">A dupla II</span></figure>
+      <figure class="drag-slide"><img loading="lazy" decoding="async" src="../raw_files/220626-megan-0319-final.jpg" alt=""/><span class="drag-slide__tag">Editorial 04</span></figure>
+    </div>
+  </div>
+</section>
+
+<!-- motion -->
+<section class="section" id="motion">
+  <div class="container">
+    <span class="subheading" data-reveal="fade">Biblioteca de movimento</span>
+    <h2 class="h-serif h-lg" style="margin-top:1.3rem;margin-bottom:clamp(2rem,4vw,3rem)" data-title data-split="words" data-stagger=".07">O gesto de cada entrada</h2>
+    <div class="anim-grid">
+      <div class="anim-cell" style="--anim:aLetter .65s var(--ease-brand) both" data-reveal><div class="anim-demo"></div><h4>Letter reveal</h4><p>650ms · ease · títulos</p></div>
+      <div class="anim-cell" style="--anim:aFadeUp .9s var(--ease-brand) both" data-reveal><div class="anim-demo"></div><h4>Fade up</h4><p>900ms · ease · seções</p></div>
+      <div class="anim-cell" style="--anim:aBlur .8s var(--ease-brand) both" data-reveal><div class="anim-demo"></div><h4>Blur in</h4><p>800ms · ease · imagens</p></div>
+      <div class="anim-cell" style="--anim:aScale .6s var(--ease-brand) both" data-reveal><div class="anim-demo"></div><h4>Scale in</h4><p>600ms · ease · cards</p></div>
+      <div class="anim-cell" style="--anim:aSlide .7s var(--ease-brand) both" data-reveal><div class="anim-demo"></div><h4>Slide</h4><p>700ms · ease · listas</p></div>
+      <div class="anim-cell" style="--anim:aFloat 3.2s ease-in-out infinite" data-reveal><div class="anim-demo"></div><h4>Float</h4><p>3.2s · loop · ambiente</p></div>
+      <div class="anim-cell" style="--anim:aPulse 1.6s var(--ease-brand) infinite" data-reveal><div class="anim-demo"></div><h4>Pulse</h4><p>1.6s · loop · status</p></div>
+      <div class="anim-cell" style="--anim:spin 1s linear infinite" data-reveal><div class="anim-demo" style="border-radius:50%"></div><h4>Spin</h4><p>1s · linear · loaders</p></div>
+    </div>
+    <p class="paragraph" style="margin-top:1.6rem;font-size:.78rem" data-reveal>Clique em qualquer célula para reproduzir · curva padrão cubic-bezier(.22,.84,.44,1) · todo movimento respeita prefers-reduced-motion.</p>
+  </div>
+</section>
+
+<!-- CTA banner -->
+<section class="cta-banner" data-parallax-zone>
+  <img class="cta-banner__img" src="../raw_files/220626-megan-0284-final.jpg" alt="" data-parallax="0.1"/>
+  <div class="cta-banner__veil"></div>
+  <div class="cta-banner__content">
+    <div class="h-serif h-lg" data-title data-split="words" data-stagger=".08">Pronta para o seu match point?</div>
+    <p class="paragraph" data-reveal>Fale com o nosso time e leve a identidade para a próxima campanha — no ponto exato.</p>
+    <button class="btn btn--gold" data-circle data-open-popup data-reveal>Agendar conversa</button>
+  </div>
+</section>
+
+<!-- faq -->
+<section class="section" id="faq">
+  <div class="container faq-wrap">
+    <div style="text-align:center;margin-bottom:clamp(2rem,5vw,3.4rem)">
+      <span class="subheading" data-reveal="fade">Dúvidas frequentes</span>
+      <h2 class="h-serif h-lg" style="margin-top:1.3rem" data-title data-split="words" data-stagger=".07">Perguntas, no ponto</h2>
+    </div>
+    <div class="faq" id="faqList">
+      <div class="faq__item">
+        <div class="faq__sum"><span class="faq__q">Posso usar outra fonte além das três oficiais?</span><span class="faq__ico"></span></div>
+        <div class="faq__body"><p>Não. Syne (apenas H1), Cormorant Garamond e Outfit cobrem toda a hierarquia. Novas fontes quebram a assinatura tipográfica da marca.</p></div>
+      </div>
+      <div class="faq__item">
+        <div class="faq__sum"><span class="faq__q">Quando usar o dourado Sandgold?</span><span class="faq__ico"></span></div>
+        <div class="faq__body"><p>Como acento: linhas, detalhes, hovers e pequenos destaques. Nunca como cor dominante de fundo — a elegância está na contenção.</p></div>
+      </div>
+      <div class="faq__item">
+        <div class="faq__sum"><span class="faq__q">As fotos podem receber filtros?</span><span class="faq__ico"></span></div>
+        <div class="faq__body"><p>Apenas ajustes sutis de temperatura para aproximar do taupe oficial. Preserve a pele natural e a luz suave do estúdio.</p></div>
+      </div>
+      <div class="faq__item">
+        <div class="faq__sum"><span class="faq__q">Posso criar novos componentes?</span><span class="faq__ico"></span></div>
+        <div class="faq__body"><p>Sim — desde que herdem os tokens documentados aqui: raios, espaçamentos, curvas de animação e a paleta oficial.</p></div>
+      </div>
+      <div class="faq__item">
+        <div class="faq__sum"><span class="faq__q">Onde encontro os arquivos originais?</span><span class="faq__ico"></span></div>
+        <div class="faq__body"><p>As fotografias oficiais vivem em <em>raw_files</em>; o brand kit e este documento, na pasta do projeto Match Point 2026.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="form-card" data-reveal>
+        <div class="form-card__img"><img loading="lazy" decoding="async" src="../raw_files/preto-branco.jpg" alt=""/></div>
+        <div class="form-card__body">
+          <h3>Receba o kit completo</h3>
+          <form class="form-inline" id="newsForm">
+            <div class="field" style="flex:1;margin:0"><label>Seu e-mail</label><input class="input" type="email" required placeholder="voce@empresa.com"/></div>
+            <button class="btn btn--sm" data-circle type="submit">Enviar</button>
+          </form>
+          <p class="paragraph" style="font-size:.7rem;margin-top:.9rem" id="newsMsg">Enviamos apenas atualizações do sistema. Sem spam.</p>
+        </div>
+      </div>
+      <div class="footer__cols">
+        <div class="footer__col">
+          <span class="label">Sistema</span>
+          <ul>
+            <li><a href="#manifesto">Manifesto</a></li>
+            <li><a href="#cores">Cores</a></li>
+            <li><a href="#tipografia">Tipografia</a></li>
+            <li><a href="#componentes">Componentes</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <span class="label">Explorar</span>
+          <ul>
+            <li><a href="#galeria">Galeria</a></li>
+            <li><a href="#retratos">Retratos</a></li>
+            <li><a href="#motion">Movimento</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <span class="label">Match Point</span>
+          <ul>
+            <li><a href="mailto:contato@matchpoint.media">contato@matchpoint.media</a></li>
+            <li><a href="#">matchpoint.media</a></li>
+            <li><a href="#" data-open-popup>Fale conosco</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer__brand-xl" aria-hidden="true">matchpoint</div>
+    <div class="footer__bottom">
+      <span>© 2026 Match Point · Todos os direitos reservados</span>
+      <span>Syne · Cormorant Garamond · Outfit</span>
+      <a href="#hero">Voltar ao topo ↑</a>
+    </div>
+  </div>
+</footer>
+
+<!-- popup -->
+<div class="popup" id="popup" role="dialog" aria-modal="true" aria-label="Fale conosco">
+  <div class="popup__overlay" data-close-popup></div>
+  <div class="popup__card" data-lenis-prevent>
+    <figure class="popup__media">
+      <img loading="lazy" decoding="async" src="../raw_files/220626-megan-0075-final.jpg" alt=""/>
+      <figcaption>"O ponto exato para a sua marca."</figcaption>
+    </figure>
+    <div class="popup__body">
+      <button class="popup__x" data-close-popup aria-label="Fechar">
+        <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1l10 10M11 1L1 11"/></svg>
+      </button>
+      <h2>Agende uma conversa</h2>
+      <p class="paragraph" style="margin-bottom:1.6rem">Preencha seus dados e retornamos em breve.</p>
+      <div class="field"><label>Nome completo *</label><input class="input" type="text" placeholder="Seu nome"/></div>
+      <div class="field"><label>E-mail *</label><input class="input" type="email" placeholder="voce@empresa.com"/></div>
+      <div class="field"><label>Mensagem</label><textarea class="input" placeholder="Conte sobre o seu projeto…"></textarea></div>
+      <label class="choice" style="margin-bottom:1.4rem"><input type="checkbox"/><span class="cbox"><svg viewBox="0 0 12 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l3.5 3.5L11 1"/></svg></span>Concordo com a política de privacidade</label>
+      <button class="btn" data-circle style="width:100%;justify-content:center">Enviar agora</button>
+    </div>
+  </div>
+</div>
+
+<!-- drag cursor -->
+<div class="drag-cursor" id="dragCursor" aria-hidden="true">
+  <svg viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 1L1.5 6l5 5"/></svg>
+  Arraste
+  <svg viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 1l5 5-5 5"/></svg>
+</div>
+
+<!-- Lenis · motor de scroll com inércia (A-H1) -->
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(function(){
+'use strict';
+var root=document.documentElement;
+root.classList.remove('no-js');root.classList.add('js');
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* preloader → hero handoff (Blueprint §7 · A-C1)
+   A sequência do hero NUNCA roda atrás do véu: só inicia no T0,
+   quando o preloader completa (véu levantando). */
+var hero=document.querySelector('.hero'),heroReady=false;
+function enterHero(){
+  if(heroReady||!hero)return;heroReady=true;
+  hero.classList.add('js--enter');
+  hero.querySelectorAll('[data-title]').forEach(function(t){t.classList.add('js--active');});
+}
+function finishPreloader(){
+  var pl=document.getElementById('preloader');
+  if(!pl||pl.classList.contains('done'))return;
+  pl.classList.add('done');                 /* véu levanta */
+  requestAnimationFrame(enterHero);         /* T0: hero pousa enquanto o véu sobe */
+}
+/* prontidão real (§7/§8): fontes carregadas + tempo mínimo de véu,
+   NÃO o load das fotos pesadas (essas chegam via arrival, Phase 08) */
+var minShown=new Promise(function(r){setTimeout(r,600);});
+var fontsReady=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+Promise.all([fontsReady,minShown]).then(finishPreloader);
+setTimeout(finishPreloader,2600);           /* fallback: nunca deixa o véu preso */
+
+/* header: scrolled state · hero hint hide (§7) · hide-on-down/reveal-on-up (A-H6) */
+var header=document.getElementById('header');
+var heroStage=hero?hero.querySelector('.hero__stage'):null;
+var popupEl=document.getElementById('popup');
+var lastY=0,navOpen=false;
+function onScroll(){
+  var y=scrollY;
+  header.classList.toggle('js--scrolled',y>36);
+  if(hero)hero.classList.toggle('js--past',y>4);
+  var blocked=navOpen||(popupEl&&popupEl.classList.contains('js--active'));
+  if(!blocked){
+    if(y>lastY&&y>140)header.classList.add('js--hidden');
+    else if(y<lastY)header.classList.remove('js--hidden');
+  }
+  lastY=y;
+}
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+/* burger / mobile nav — cascata + scroll-lock (A-C4) */
+var burger=document.getElementById('burger'),navLinks=document.getElementById('navLinks');
+burger.setAttribute('aria-expanded','false');
+function setNav(open){
+  navOpen=open;
+  burger.classList.toggle('js--active',open);
+  navLinks.classList.toggle('js--open',open);
+  document.body.classList.toggle('js--nav-lock',open);
+  burger.setAttribute('aria-expanded',open?'true':'false');
+  if(open)header.classList.remove('js--hidden');   /* header sempre visível com menu aberto */
+}
+burger.addEventListener('click',function(){setNav(!navOpen);});
+navLinks.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){setNav(false);});});
+addEventListener('keydown',function(e){if(e.key==='Escape'&&navOpen)setNav(false);});
+
+/* active-section indicator (scrollspy · A-C4) */
+var hlinks=[].slice.call(navLinks.querySelectorAll('.hlink'));
+hlinks.forEach(function(l,i){l.style.setProperty('--i',i);});   /* índice p/ cascata */
+var navInd=document.createElement('span');navInd.className='hlink-ind';navInd.setAttribute('aria-hidden','true');navLinks.appendChild(navInd);
+var navMap=hlinks.map(function(l){var id=l.getAttribute('href')||'';var s=id.charAt(0)==='#'?document.querySelector(id):null;return{link:l,sec:s};}).filter(function(m){return m.sec;});
+var navActive=null;
+function moveNavInd(link){
+  if(!link){navInd.style.opacity='0';return;}
+  navInd.style.opacity='1';
+  navInd.style.transform='translateX('+link.offsetLeft+'px) scaleX('+link.offsetWidth+')';
+}
+function setNavActive(link){
+  if(link===navActive)return;navActive=link;
+  hlinks.forEach(function(l){
+    var on=l===link;l.classList.toggle('js--active',on);
+    if(on)l.setAttribute('aria-current','true');else l.removeAttribute('aria-current');
+  });
+  moveNavInd(link);
+}
+if('IntersectionObserver' in window && navMap.length){
+  var spy=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting)return;
+      var m=navMap.filter(function(x){return x.sec===e.target;})[0];
+      if(m)setNavActive(m.link);
+    });
+  },{rootMargin:'-45% 0px -55% 0px',threshold:0});
+  navMap.forEach(function(m){spy.observe(m.sec);});
+}
+addEventListener('resize',function(){if(navActive)moveNavInd(navActive);if(innerWidth>980&&navOpen)setNav(false);});
+
+/* nav link char split (GL navigation-link-hover) */
+document.querySelectorAll('.hlink').forEach(function(link){
+  var txt=link.getAttribute('data-hover')||link.textContent.trim();
+  function word(cls){
+    var w=document.createElement('span');w.className=cls;
+    txt.split('').forEach(function(c,i){
+      var s=document.createElement('span');s.className='ch';
+      s.style.transitionDelay=(i*0.022)+'s';
+      s.innerHTML=(c===' ')?'&nbsp;':c;w.appendChild(s);
+    });
+    return w;
+  }
+  link.textContent='';link.appendChild(word('w1'));link.appendChild(word('w2'));
+});
+
+/* title split (GL title-animation) — preserva <em>/<span>/<br> aninhados */
+document.querySelectorAll('[data-title]').forEach(function(el){
+  var mode=el.getAttribute('data-split')||'chars';
+  var stag=parseFloat(el.getAttribute('data-stagger')||'.05');
+  var base=parseFloat(el.getAttribute('data-delay')||'0');
+  var idx=0;
+  function unitSpan(u){
+    var wrap=document.createElement('span');wrap.className='t-wrap';
+    var ch=document.createElement('span');ch.className='t-ch';
+    ch.textContent=u;ch.style.transitionDelay=(base+(idx++)*stag)+'s';
+    wrap.appendChild(ch);return wrap;
+  }
+  function spacer(){var sp=document.createElement('span');sp.className='t-wrap sp';sp.innerHTML='&nbsp;';return sp;}
+  function splitInto(node){
+    var frag=document.createDocumentFragment();
+    [].slice.call(node.childNodes).forEach(function(child){
+      if(child.nodeType===3){
+        var text=child.textContent.replace(/\s+/g,' ');
+        if(!text.trim()){if(text)frag.appendChild(spacer());return;}
+        var lead=/^\s/.test(text),trail=/\s$/.test(text);
+        var units=(mode==='words')?text.trim().split(/\s+/):text.trim().split('');
+        if(lead)frag.appendChild(spacer());
+        units.forEach(function(u,i){
+          if(u===' '){frag.appendChild(spacer());return;}
+          frag.appendChild(unitSpan(u));
+          if(mode==='words'&&i<units.length-1)frag.appendChild(spacer());
+        });
+        if(trail)frag.appendChild(spacer());
+      }else if(child.nodeType===1){
+        if(child.tagName==='BR'){frag.appendChild(child.cloneNode());return;}
+        var clone=child.cloneNode(false);
+        clone.appendChild(splitInto(child));
+        frag.appendChild(clone);
+      }
+    });
+    return frag;
+  }
+  var out=splitInto(el);el.textContent='';el.appendChild(out);
+});
+
+/* observers: titles + reveals */
+if('IntersectionObserver' in window){
+  var tio=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('js--active');tio.unobserve(e.target);}
+  });},{threshold:.25});
+  document.querySelectorAll('[data-title]').forEach(function(el){if(el.closest('.hero'))return;tio.observe(el);});
+
+  var rio=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){
+      var sibs=[].slice.call(e.target.parentNode.children).filter(function(n){return n.hasAttribute&&n.hasAttribute('data-reveal');});
+      var i=sibs.indexOf(e.target);
+      /* ordem por dobra (§2 · A-H3): suporte sempre atrás do protagonista (título) */
+      var sec=e.target.closest('section,footer');
+      var lead=(sec&&sec.querySelector('[data-title]')) ? .18 : 0;
+      e.target.style.transitionDelay=(lead+(i>0?Math.min(i,5)*.09:0))+'s';
+      e.target.classList.add('in');rio.unobserve(e.target);
+    }
+  });},{threshold:.14,rootMargin:'0px 0px -6%'});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){rio.observe(el);});
+}else{
+  document.querySelectorAll('[data-title]').forEach(function(el){el.classList.add('js--active');});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){el.classList.add('in');});
+}
+
+/* numerais vivos · count-up ao entrar em viewport (A-M1) */
+function countUp(el){
+  var target=parseFloat(el.getAttribute('data-count'))||0;
+  var pad=parseInt(el.getAttribute('data-pad')||'0',10);
+  var suffix=el.getAttribute('data-suffix')||'';
+  function fmt(v){var s=String(Math.round(v));while(s.length<pad)s='0'+s;return s+suffix;}
+  if(reduce){el.textContent=fmt(target);return;}
+  var start=null,dur=900;
+  function step(t){
+    if(!start)start=t;var p=Math.min((t-start)/dur,1),e=1-Math.pow(1-p,3);
+    el.textContent=fmt(target*e);
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+if('IntersectionObserver' in window){
+  var cio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){countUp(e.target);cio.unobserve(e.target);}});},{threshold:.6});
+  document.querySelectorAll('[data-count]').forEach(function(el){cio.observe(el);});
+}else{
+  document.querySelectorAll('[data-count]').forEach(function(el){el.textContent=(el.getAttribute('data-count')||'')+(el.getAttribute('data-suffix')||'');});
+}
+/* progress bars: preenchem ao entrar em viewport, uma vez (A-H2 loading) */
+function fillBar(el){var b=el.querySelector('i');if(b)b.style.width=(el.getAttribute('data-fill')||'0')+'%';}
+if('IntersectionObserver' in window){
+  var fio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){fillBar(e.target);fio.unobserve(e.target);}});},{threshold:.5});
+  document.querySelectorAll('[data-fill]').forEach(function(el){fio.observe(el);});
+}else{
+  document.querySelectorAll('[data-fill]').forEach(fillBar);
+}
+
+/* scroll engine: Lenis (inércia) + rAF único · parallax + saída do hero (A-H1, §15) */
+var pxEls=[].slice.call(document.querySelectorAll('[data-parallax]'));
+var lastFY=-1;   /* short-circuit: só recomputa quando o scroll de fato muda (§15) */
+function frameUpdate(){
+  var y=scrollY;if(y===lastFY)return;lastFY=y;
+  var vh=innerHeight;
+  /* saída do hero no primeiro scroll: palco recua 6% e esmaece (§7) */
+  if(heroStage){var p=Math.min(y/300,1);heroStage.style.transform='translate3d(0,'+(-6*p).toFixed(2)+'%,0)';heroStage.style.opacity=(1-.7*p).toFixed(3);}
+  pxEls.forEach(function(img){
+    var zone=img.closest('[data-parallax-zone]')||img.parentNode;
+    var r=zone.getBoundingClientRect();
+    if(r.bottom<0||r.top>vh)return;
+    var speed=parseFloat(img.getAttribute('data-parallax'))||.1;
+    var delta=(r.top+r.height/2-vh/2)*speed;
+    img.style.transform='translate3d(0,'+delta.toFixed(1)+'px,0)';
+  });
+}
+var lenis=null;
+if(!reduce){
+  if(window.Lenis){
+    /* inércia contínua = lerp (Blueprint §13) · Lenis rola a janela → scrollY e onScroll seguem válidos */
+    lenis=new Lenis({lerp:.1,wheelMultiplier:.9,smoothWheel:true});
+    var raf=function(t){lenis.raf(t);frameUpdate();requestAnimationFrame(raf);};
+    requestAnimationFrame(raf);
+  }else{
+    /* fallback sem inércia: scroll nativo throttled em rAF */
+    var ticking=false;
+    addEventListener('scroll',function(){if(!ticking){requestAnimationFrame(function(){frameUpdate();ticking=false;});ticking=true;}},{passive:true});
+  }
+  frameUpdate();
+}
+/* rolagem de âncora com duração/curva da marca (A-H6) — offset compensa o header fixo */
+if(lenis){
+  var easeOut=function(x){return 1-Math.pow(1-x,3);};
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      var id=a.getAttribute('href');
+      if(!id||id.length<2)return;
+      var t=document.querySelector(id);
+      if(!t)return;
+      e.preventDefault();
+      lenis.scrollTo(t,{offset:-72,duration:1,easing:easeOut});
+    });
+  });
+}
+/* recomputa parallax/saída do hero ao redimensionar (§15) */
+addEventListener('resize',function(){lastFY=-1;frameUpdate();},{passive:true});
+
+/* image arrival controller (A-C2) — assenta cada foto ao decodificar */
+[].slice.call(document.querySelectorAll('.banner__img,.cta-banner__img,.g-item img,.steps__media img,.drag-slide img,.form-card__img img,.popup__media img')).forEach(function(img){
+  function settle(){img.classList.add('arrived');img.style.willChange='auto';}
+  if(img.complete&&img.naturalWidth){requestAnimationFrame(settle);}   /* já em cache */
+  else{img.addEventListener('load',settle);img.addEventListener('error',settle);}
+});
+
+/* circle-btn origin (GL) */
+document.querySelectorAll('[data-circle]').forEach(function(btn){
+  btn.addEventListener('pointerenter',function(e){
+    var r=btn.getBoundingClientRect();
+    btn.style.setProperty('--left',(e.clientX-r.left)+'px');
+    btn.style.setProperty('--top',(e.clientY-r.top)+'px');
+  });
+  btn.addEventListener('pointerleave',function(e){
+    var r=btn.getBoundingClientRect();
+    btn.style.setProperty('--left',(e.clientX-r.left)+'px');
+    btn.style.setProperty('--top',(e.clientY-r.top)+'px');
+  });
+});
+
+/* faq accordion (GL faq) */
+document.querySelectorAll('#faqList .faq__sum').forEach(function(sum){
+  sum.addEventListener('click',function(){
+    var item=sum.parentNode,body=item.querySelector('.faq__body');
+    var open=item.classList.contains('js--active');
+    item.parentNode.querySelectorAll('.faq__item').forEach(function(it){
+      it.classList.remove('js--active');it.querySelector('.faq__body').style.maxHeight=null;
+    });
+    if(!open){item.classList.add('js--active');body.style.maxHeight=body.scrollHeight+'px';}
+  });
+});
+
+/* drag slider (GL drug) — com momentum/inércia (A-H4).
+   Cursor rico é EXCLUSIVO deste slider (política de cursor · A-M2). */
+var zone=document.getElementById('dragZone'),bodyEl=document.getElementById('dragBody'),cursor=document.getElementById('dragCursor');
+if(zone&&matchMedia('(pointer:fine)').matches){
+  var down=false,startX=0,startScroll=0,moved=false,lastX=0,vel=0,momRAF=null;
+  function stopMom(){if(momRAF){cancelAnimationFrame(momRAF);momRAF=null;}}
+  zone.addEventListener('pointermove',function(e){
+    cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';
+    cursor.classList.add('js--active');
+    if(down){
+      var dx=e.clientX-startX;
+      if(Math.abs(dx)>4)moved=true;
+      bodyEl.scrollLeft=startScroll-dx;
+      vel=e.clientX-lastX;lastX=e.clientX;      /* velocidade do gesto (px/frame) */
+    }
+  });
+  zone.addEventListener('pointerenter',function(){cursor.classList.add('js--active');});
+  zone.addEventListener('pointerleave',function(){cursor.classList.remove('js--active','js--press');down=false;});
+  zone.addEventListener('pointerdown',function(e){
+    stopMom();down=true;moved=false;startX=e.clientX;lastX=e.clientX;vel=0;startScroll=bodyEl.scrollLeft;
+    cursor.classList.add('js--press');zone.setPointerCapture&&zone.setPointerCapture(e.pointerId);
+  });
+  addEventListener('pointerup',function(){
+    if(!down)return;down=false;cursor.classList.remove('js--press');
+    /* momentum: continua com a velocidade do gesto; atrito .95/frame; assenta (§11) */
+    var v=-vel;
+    if(reduce||!moved||Math.abs(v)<0.5)return;
+    (function glide(){
+      v*=0.95;bodyEl.scrollLeft+=v;
+      momRAF=Math.abs(v)>0.4?requestAnimationFrame(glide):null;
+    })();
+  });
+  zone.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation();}},true);
+}
+
+/* magnetismo sutil nos CTAs primários (A-M2) — até ~6px, retorno pela curva da marca */
+if(matchMedia('(pointer:fine)').matches&&!reduce){
+  [].slice.call(document.querySelectorAll('.btn:not(.btn--sm)')).forEach(function(b){
+    b.addEventListener('pointerenter',function(){b.classList.add('js--magnetic');});
+    b.addEventListener('pointermove',function(e){
+      var r=b.getBoundingClientRect();
+      var mx=(e.clientX-(r.left+r.width/2))/r.width,my=(e.clientY-(r.top+r.height/2))/r.height;
+      b.style.transform='translate('+(mx*12).toFixed(1)+'px,'+(my*8).toFixed(1)+'px)';
+    });
+    b.addEventListener('pointerleave',function(){b.classList.remove('js--magnetic');b.style.transform='';});
+  });
+}
+
+/* slider operável por teclado (A-C3) — setas rolam por um retrato */
+if(bodyEl){
+  bodyEl.addEventListener('keydown',function(e){
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+    e.preventDefault();
+    var s=bodyEl.querySelector('.drag-slide'),step=s?s.offsetWidth+24:300;
+    bodyEl.scrollBy({left:e.key==='ArrowRight'?step:-step,behavior:reduce?'auto':'smooth'});
+  });
+}
+
+/* pausa acessível de todos os marquees (WCAG 2.2.2 · A-C3) */
+var marqToggle=document.getElementById('marqToggle');
+if(marqToggle)marqToggle.addEventListener('click',function(){
+  var paused=document.body.classList.toggle('js--marq-paused');
+  marqToggle.setAttribute('aria-pressed',paused?'true':'false');
+  marqToggle.textContent=paused?'Retomar movimento':'Pausar movimento';
+});
+
+/* popup */
+var popup=document.getElementById('popup'),lastFocus=null;
+function focusables(c){return [].slice.call(c.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(function(el){return el.offsetParent!==null;});}
+function trapTab(e,c){if(e.key!=='Tab')return;var f=focusables(c);if(!f.length)return;var first=f[0],last=f[f.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+function openPopup(){
+  lastFocus=document.activeElement;
+  popup.classList.add('js--active');document.body.style.overflow='hidden';
+  var h=popup.querySelector('.popup__body h2');if(h){h.setAttribute('tabindex','-1');h.focus();}   /* foco inicial no título (§10) */
+}
+function closePopup(){
+  popup.classList.remove('js--active');document.body.style.overflow='';
+  if(lastFocus&&lastFocus.focus)lastFocus.focus();lastFocus=null;                                   /* devolve o foco ao gatilho */
+}
+document.querySelectorAll('[data-open-popup]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();openPopup();});});
+document.querySelectorAll('[data-close-popup]').forEach(function(b){b.addEventListener('click',closePopup);});
+/* teclado: Esc fecha, Tab fica contido no modal aberto / no menu mobile aberto (A-C3) */
+document.addEventListener('keydown',function(e){
+  if(popup.classList.contains('js--active')){if(e.key==='Escape')return closePopup();trapTab(e,popup);}
+  else if(navOpen){trapTab(e,navLinks);}
+});
+
+/* note card close */
+var noteClose=document.getElementById('noteClose');
+if(noteClose)noteClose.addEventListener('click',function(){document.getElementById('noteCard').classList.add('js--hidden');});
+
+/* swatch copy */
+document.querySelectorAll('[data-copy]').forEach(function(sw){
+  sw.addEventListener('click',function(){
+    var v=sw.getAttribute('data-copy');
+    if(navigator.clipboard)navigator.clipboard.writeText(v);
+    var hex=sw.querySelector('.swatch-row__hex'),old=hex.innerHTML;
+    hex.innerHTML='copiado ✓';hex.style.color='var(--accent)';
+    setTimeout(function(){hex.innerHTML=old;hex.style.color='';},1200);
+  });
+});
+
+/* forms: validação + botão que morfa loading→sucesso (A-H2) */
+var emailRe=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+function fieldMsg(field){var m=field.querySelector('.field__msg');if(!m){m=document.createElement('div');m.className='field__msg';m.setAttribute('aria-live','polite');field.appendChild(m);}return m;}
+function markError(field,text){field.classList.remove('is-success');field.classList.add('is-error');fieldMsg(field).textContent=text||'';}
+function markOk(field){field.classList.remove('is-error');field.classList.add('is-success');fieldMsg(field).textContent='';}
+function clearState(field){field.classList.remove('is-error','is-success');fieldMsg(field).textContent='';}
+function btnLoad(btn,done){
+  if(btn.dataset.busy)return;btn.dataset.busy='1';
+  btn.style.minWidth=btn.offsetWidth+'px';                 /* trava a largura: sem salto */
+  var label=btn.innerHTML;btn.classList.add('is-loading');
+  btn.innerHTML='<span class="btn__spin" aria-hidden="true"></span>';
+  setTimeout(function(){
+    btn.classList.remove('is-loading');btn.classList.add('is-success');
+    btn.innerHTML='<svg class="btn__check" viewBox="0 0 16 14" fill="none" aria-hidden="true"><path d="M1 7l4.5 4.5L15 1"/></svg>';
+    if(done)done();
+    setTimeout(function(){btn.classList.remove('is-success');btn.innerHTML=label;btn.style.minWidth='';delete btn.dataset.busy;},1500);
+  },1300);
+}
+/* validação live de e-mail em qualquer campo type=email */
+[].slice.call(document.querySelectorAll('input[type=email]')).forEach(function(inp){
+  var f=inp.closest('.field');if(!f)return;
+  inp.addEventListener('blur',function(){var v=inp.value.trim();if(!v){clearState(f);return;}emailRe.test(v)?markOk(f):markError(f,'E-mail inválido');});
+  inp.addEventListener('focus',function(){clearState(f);});
+});
+/* newsletter (footer) */
+var nf=document.getElementById('newsForm');
+if(nf)nf.addEventListener('submit',function(e){
+  e.preventDefault();
+  var inp=nf.querySelector('input[type=email]'),f=inp.closest('.field'),btn=nf.querySelector('.btn');
+  if(!emailRe.test(inp.value.trim())){markError(f,'Digite um e-mail válido');inp.focus();return;}
+  markOk(f);
+  btnLoad(btn,function(){document.getElementById('newsMsg').textContent='Obrigado! Você receberá as próximas atualizações do sistema.';});
+});
+/* popup: valida obrigatórios → loading → sucesso → fecha */
+var popBtn=document.querySelector('.popup__body .btn');
+if(popBtn)popBtn.addEventListener('click',function(){
+  var bad=null;
+  [].slice.call(document.querySelectorAll('.popup__body .field')).forEach(function(f){
+    var inp=f.querySelector('.input');if(!inp||inp.tagName==='TEXTAREA')return;   /* mensagem é opcional */
+    var v=inp.value.trim();
+    if(!v){markError(f,'Campo obrigatório');if(!bad)bad=inp;}
+    else if(inp.type==='email'&&!emailRe.test(v)){markError(f,'E-mail inválido');if(!bad)bad=inp;}
+    else markOk(f);
+  });
+  if(bad){bad.focus();return;}
+  btnLoad(popBtn,function(){setTimeout(closePopup,700);});
+});
+/* botão de demonstração do morph na biblioteca */
+var ld=document.getElementById('loadDemo');
+if(ld)ld.addEventListener('click',function(){btnLoad(ld);});
+
+/* anim cells replay */
+document.querySelectorAll('.anim-cell').forEach(function(cell){
+  cell.addEventListener('click',function(){cell.classList.remove('play');void cell.offsetWidth;cell.classList.add('play');});
+});
+})();
+</script>
+</body>
+</html>
