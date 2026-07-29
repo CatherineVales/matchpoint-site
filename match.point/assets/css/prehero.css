@@ -431,6 +431,9 @@ html.pl-lock{overflow:hidden}
   .topbar__end{position:absolute;right:var(--pad)}
   .topbar__meta{display:flex}
 }
+/* mobile: menos poluição no topo — a assinatura "Est. 2026" some (fica
+   grudada no wordmark em telas estreitas); o alternador de idioma fica. */
+@media(max-width:600px){.topbar__est{display:none}}
 
 /* entrada suave da topbar (com o véu) */
 html.js .topbar__brand,html.js .topbar__meta,html.js .topbar__end{
@@ -1335,7 +1338,7 @@ html.js .diag__turn:has(.diag__turn-text.js--active) .diag__turn-line{transform:
    Cards glass em perspectiva; JS aplica os transforms por card.
    ═══════════════════════════════════════════════════════════ */
 .flow{--card-w:clamp(240px,24vw,320px);position:relative;width:100%;max-width:1180px;margin-inline:auto}
-.flow__stage{perspective:1700px;overflow:hidden;padding-block:clamp(.5rem,1.2vh,1.1rem)}
+.flow__stage{perspective:1700px;overflow:hidden;padding-block:clamp(.5rem,1.2vh,1.1rem);touch-action:pan-y}
 /* ALTURA POR VIEWPORT: o card mede-se pela tela, não pela largura — assim
    a dobra inteira cabe e encolhe junto em telas mais baixas.            */
 .flow__track{position:relative;height:clamp(340px,54vh,540px);transform-style:preserve-3d}
@@ -1348,7 +1351,7 @@ html.js .diag__turn:has(.diag__turn-text.js--active) .diag__turn-line{transform:
   background:linear-gradient(155deg,#efe9e0 8%,#d9cfc0 55%,#cabfab 100%);
   box-shadow:var(--elev-float);backface-visibility:hidden;
   transition:transform var(--dur-slow) var(--ease-brand),opacity var(--dur-slow) var(--ease-brand),box-shadow var(--dur-base) var(--ease-brand);
-  will-change:transform;text-align:left;
+  will-change:transform;text-align:left;touch-action:pan-y;
 }
 .flow__card.is-active{cursor:default}
 /* imagem do card (entra quando os arquivos chegarem) */
@@ -1409,7 +1412,7 @@ html.js .diag__turn:has(.diag__turn-text.js--active) .diag__turn-line{transform:
 .flow__arrow{
   position:absolute;top:calc(50% - clamp(1.4rem,3vw,2.2rem));transform:translateY(-50%);z-index:20;
   width:clamp(40px,4vw,48px);height:clamp(40px,4vw,48px);border-radius:50%;
-  background:var(--white);border:1px solid var(--line);box-shadow:var(--elev-float);
+  background:var(--white);border:1.5px solid var(--accent);box-shadow:var(--elev-float);  /* contraste: aro âmbar visível no fundo creme */
   display:grid;place-items:center;color:var(--accent);cursor:pointer;
   transition:transform var(--dur-fast) var(--ease-brand),background var(--dur-fast),color var(--dur-fast),border-color var(--dur-fast),opacity var(--dur-fast);
 }
@@ -1439,11 +1442,13 @@ html.js .diag__turn:has(.diag__turn-text.js--active) .diag__turn-line{transform:
 .method__note-mark{color:var(--accent);font-weight:500;margin-right:.4rem}
 
 @media(max-width:560px){
-  .flow{--card-w:clamp(220px,72vw,280px)}
-  .flow__arrow{top:auto;bottom:-2px;transform:none}
-  .flow__arrow--prev{left:calc(50% - 3rem)} .flow__arrow--next{right:calc(50% - 3rem)}
-  .flow__arrow:active{transform:scale(var(--scale-press-chip))}
-  .flow__dots{margin-top:clamp(3.2rem,10vw,4rem)}
+  .flow{--card-w:clamp(230px,78vw,300px)}
+  /* setas flanqueando o card (não mais jogadas para o rodapé) · o JS esconde
+     os cards vizinhos no mobile, então as laterais ficam livres p/ as setas */
+  .flow__arrow{top:clamp(150px,26vh,230px);bottom:auto;transform:translateY(-50%)}
+  .flow__arrow--prev{left:-2px} .flow__arrow--next{right:-2px}
+  .flow__arrow:active{transform:translateY(-50%) scale(var(--scale-press-chip))}
+  .flow__dots{margin-top:clamp(1.4rem,4vw,2rem)}
 }
 @media(prefers-reduced-motion:reduce){
   .flow__card{transition:opacity var(--dur-fast) var(--ease-brand)}

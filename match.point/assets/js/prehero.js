@@ -434,6 +434,7 @@ if(flow){
   function circ(i){var o=i-active;if(o>N/2)o-=N;else if(o<-N/2)o+=N;return o;}
 
   function flowRender(){
+    var mob=innerWidth<=560;   /* mobile: 1 card por vez, sem coverflow 3D (impede vizinhos de vazarem) */
     for(var i=0;i<N;i++){
       var c=flowCards[i], o=circ(i), ao=Math.abs(o);
       /* deu a volta? teleporta (não desliza atravessando a cena) */
@@ -442,9 +443,9 @@ if(flow){
         (function(el){requestAnimationFrame(function(){el.style.transition='';});})(c);
       }
       c._o=o;
-      if(ao>MAXV){
+      if(ao>MAXV || (mob && ao>0)){
         c.style.opacity='0';c.style.pointerEvents='none';c.style.zIndex='0';
-        c.style.transform='translateX('+(o<0?-1:1)*150+'%) scale(.6)';
+        c.style.transform='translateX('+(o<0?-1:1)*(mob?102:150)+'%) scale('+(mob?1:.6)+')';
         c.tabIndex=-1;c.classList.remove('is-active');
       }else{
         var x=o*57, rot=reduceFlow?0:(-o*33), tz=reduceFlow?0:(-ao*140), sc=1-ao*0.135;
@@ -509,7 +510,8 @@ if(flow){
     if(Math.abs(dragDx)>48)flowGo(active+(dragDx<0?1:-1));
   });
 
-  addEventListener('resize',function(){var m=flowMax();if(m!==MAXV){MAXV=m;flowRender();}},{passive:true});
+  var flowLastMob=innerWidth<=560;
+  addEventListener('resize',function(){var m=flowMax();var mn=innerWidth<=560;if(m!==MAXV||mn!==flowLastMob){MAXV=m;flowLastMob=mn;flowRender();}},{passive:true});
   flowRender();
 }
 
