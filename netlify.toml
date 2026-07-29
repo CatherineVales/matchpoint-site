@@ -1,0 +1,5 @@
+# Deploy do site Match Point no Netlify — site estático, sem etapa de build.
+# O conteúdo publicável fica em match.point/assets (index.html na raiz dele).
+[build]
+  publish = "match.point/assets"
+  command = ""
